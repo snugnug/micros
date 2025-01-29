@@ -7,6 +7,7 @@
       };
 
       dhcpcd = prev.dhcpcd.override {udev = null;};
+      gnutls = prev.gnutls.overrideAttrs {doCheck = false;};
 
       plymouth = prev.plymouth.override {
         udev = null;
