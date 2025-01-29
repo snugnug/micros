@@ -44,6 +44,10 @@ in {
         runitExecutable = "${pkgs.runit}/bin/runit";
 
         systemConfig = null;
+
+        postBootCommands = pkgs.writeText "local-cmds" ''
+          ${config.not-os.postBootCommands}
+        '';
       };
     };
   };

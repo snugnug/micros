@@ -165,25 +165,21 @@
       mount $realroot /mnt || exec ${shell}
     fi
     chmod 755 /mnt/
-    mkdir -p /mnt/nix/store/
     ${config.not-os.postMount}
 
+    mkdir -p /mnt/nix/store/
     ${
-      if config.nix.enable
+      if config.nix.enable && config.not-os.readOnlyNixStore
       then ''
-        # make the store writeable
-        mkdir -p /mnt/nix/.ro-store /mnt/nix/.overlay-store /mnt/nix/store
-        mount $root /mnt/nix/.ro-store -t squashfs
-        if [ $realroot = $1 ]; then
-          mount tmpfs -t tmpfs /mnt/nix/.overlay-store -o size=1G
-        fi
-        mkdir -pv /mnt/nix/.overlay-store/work /mnt/nix/.overlay-store/rw
-        modprobe overlay
-        mount -t overlay overlay -o lowerdir=/mnt/nix/.ro-store,upperdir=/mnt/nix/.overlay-store/rw,workdir=/mnt/nix/.overlay-store/work /mnt/nix/store
+        mkdir -p /mnt.ro /mnt.overlay
+        mount -o ro $root /mnt.ro
+        mount -t tmpfs -o size=1G tmpfs /mnt.overlay
+        mkdir -p /mnt.overlay/upper /mnt.overlay/work
+        mount -t overlay overlay -o lowerdir=/mnt.ro,upperdir=/mnt.overlay/upper,workdir=/mnt.overlay/work /mnt
       ''
       else ''
         # readonly store
-        mount $root /mnt/nix/store/ -t squashfs
+        mount $root /mnt
       ''
     }
 
@@ -238,6 +234,27 @@ in {
       postMount = mkOption {
         type = types.lines;
         default = "";
+      };
+
+      # There is no preBootCommands. Trust me, I've checked.
+      postBootCommands = mkOption {
+        default = "";
+        example = "rm -f /var/log/messages";
+        type = types.lines;
+        description = ''
+          Shell commands to be executed just before runit is started.
+        '';
+      };
+
+      readOnlyNixStore = mkOption {
+        type = types.bool;
+        default = true;
+        description = ''
+          If set, NixOS will enforce the immutability of the Nix store
+          by making {file}`/nix/store` a read-only bind
+          mount.  Nix will automatically make the store writable when
+          needed.
+        '';
       };
     };
 

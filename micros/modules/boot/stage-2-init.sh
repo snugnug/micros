@@ -27,6 +27,9 @@ $systemConfig/activate
 # Record the boot configuration.
 ln -sfn "$systemConfig" /run/booted-system
 
+# Run any and all user specified commands before runit is started.
+@shell@ @postBootCommands@
+
 # Start runit in a clean environment.
 echo "starting runit..."
-exec @runitExecutable@ "$@"
+exec @runitExecutable@
