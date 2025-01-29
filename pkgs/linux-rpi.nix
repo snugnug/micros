@@ -1,33 +1,29 @@
 {
-  stdenv,
   fetchFromGitHub,
-  buildLinux,
+  linuxPackages_rpi2,
   ...
-} @ args: let
+}: let
   modDirVersion = "4.4.36";
   tag = "1.20161020-1";
-
-  linux = buildLinux (args
-    // rec {
-      version = "${modDirVersion}-${tag}";
-      inherit modDirVersion;
-
-      src = fetchFromGitHub {
-        owner = "raspberrypi";
-        repo = "linux";
-        rev = "c6d86f7aa554854b04614ebb4d394766081fb41f";
-        sha256 = "13rjmks4whh7kn0wrswanwq3b0ia9bxsq8a6xiqiivh6k3vxqhys";
-      };
-
-      features.iwlwifi = true;
-      features.needsCifsUtils = true;
-      features.canDisableNetfilterConntrackHelpers = true;
-      features.netfilterRPFilter = true;
-
-      extraMeta.hydraPlatforms = [];
-    });
 in
-  linux.overrideAttrs {
+  (linuxPackages_rpi2.kernel).overrideAttrs {
+    version = "${modDirVersion}-${tag}";
+    inherit modDirVersion;
+
+    src = fetchFromGitHub {
+      owner = "raspberrypi";
+      repo = "linux";
+      rev = "c6d86f7aa554854b04614ebb4d394766081fb41f";
+      sha256 = "13rjmks4whh7kn0wrswanwq3b0ia9bxsq8a6xiqiivh6k3vxqhys";
+    };
+
+    features.iwlwifi = true;
+    features.needsCifsUtils = true;
+    features.canDisableNetfilterConntrackHelpers = true;
+    features.netfilterRPFilter = true;
+
+    extraMeta.hydraPlatforms = [];
+
     postConfigure = ''
       # The v7 defconfig has this set to '-v7' which screws up our modDirVersion.
       sed -i $buildRoot/.config -e 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=""/'
