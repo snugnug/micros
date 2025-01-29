@@ -10,6 +10,7 @@ in {
 
 
         The static IP will be set to the value of {option}`not-os.simpleStaticIp.address`
+        therefore you must configure address, route, gateway and interface accordingly.
       '';
 
       address = mkOption {
@@ -38,17 +39,20 @@ in {
       };
     };
 
-    networking.timeServers = mkOption {
-      type = types.listOf types.str;
-      default = [
-        "0.nixos.pool.ntp.org"
-        "1.nixos.pool.ntp.org"
-        "2.nixos.pool.ntp.org"
-        "3.nixos.pool.ntp.org"
-      ];
-      description = ''
-        The set of NTP servers from which to synchronise.
-      '';
+    networking = {
+      dhcp.enable = mkEnableOption "dhcp";
+      timeServers = mkOption {
+        type = types.listOf types.str;
+        default = [
+          "0.nixos.pool.ntp.org"
+          "1.nixos.pool.ntp.org"
+          "2.nixos.pool.ntp.org"
+          "3.nixos.pool.ntp.org"
+        ];
+        description = ''
+          The set of NTP servers from which to synchronise.
+        '';
+      };
     };
   };
 }
