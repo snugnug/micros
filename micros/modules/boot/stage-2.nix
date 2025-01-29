@@ -30,11 +30,21 @@ in {
   };
 
   config = {
-    system.build.bootStage2 = pkgs.substituteAll {
+    system.build.bootStage2 = pkgs.replaceVarsWith {
       src = ./stage-2-init.sh;
       isExecutable = true;
-      inherit (config.system) path;
-      inherit (pkgs) runtimeShell;
+      replacements = {
+        shell = "${pkgs.busybox}/bin/ash";
+        path = lib.makeBinPath [
+          pkgs.coreutils
+          pkgs.util-linux
+        ];
+
+        # The Runit executable to be run at the end of the script.
+        runitExecutable = "${pkgs.runit}/bin/runit";
+
+        systemConfig = null;
+      };
     };
   };
 }
