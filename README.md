@@ -2,9 +2,15 @@
 
 [not-os]: https://github.com/cleverca22/not-os
 
-MicrOS is a small, experimental operation system designed for embedded
+MicrOS is a small, experimental operating system designed for embedded
 situations. It is based heavily on NixOS, but compiles down to a microscopic
 kernel, an initrd and a 48mb squashfs.
+
+[Runit](https://smarden.org/runit/) is used instead of system, with some degree
+of abstraction over services. This is not as robust as NixOS systemd module, nor
+is it in any way portable (i.e., additional init systems are not yet possible)
+but it results in a small and fast image for low-resource scenarios, e.g.,
+embedded development.
 
 > [!NOTE]
 > Work here is based _heavily_ on the awesome [not-os]. I worked on something
