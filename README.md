@@ -21,6 +21,36 @@ embedded development.
 > working to provide more _idiomatic_ Nix code that follows best practices and
 > focuses on purity.
 
+## Building
+
+Micros is a build system for "unconventional" boards more so than it is a
+collection of hardware modules. It should be utilized _primarily_ as a module
+system to reduce friction in building images for embedded systems.
+
+Construct your own system with `lib.microsSystem`. This functions almost
+identical to `lib.nixosSystem` that you might be familiar with.
+
+```nix
+lib.microsSystem {
+  modules = [
+    {
+      not-os.rpi1 = true;
+      not-os.rpi2 = true;
+
+      system.build.rpi-firmware = raspi-firmware;
+
+      nixpkgs.hostPlatform = {system = "armv7l-linux";};
+      nixpkgs.buildPlatform = {system = "x86_64-linux";};
+
+    }
+  ];
+};
+```
+
+Above configuration enough to construct a basic system. You may build different
+components of the configuration, available under `config.system.build` to create
+different build artifacts for different workflows.
+
 ## License
 
 MicrOS is a _soft_-fork of not-os, plain and simple. Any and all work here is
