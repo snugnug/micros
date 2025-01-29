@@ -60,7 +60,9 @@
     };
 
   noUserModules = evalModulesMinimal {
-    inherit prefix specialArgs;
+    inherit prefix;
+    specialArgs =
+      {modulesPath = builtins.toString ./.;} // specialArgs;
     modules = baseModules ++ nixpkgsModules ++ [modulesModule];
   };
 in
