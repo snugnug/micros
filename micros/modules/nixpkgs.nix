@@ -3,7 +3,9 @@
     (_final: prev: {
       dhcpcd = prev.dhcpcd.override {udev = null;};
       procps = prev.procps.override {withSystemd = false;};
-      utillinux = prev.utillinux.override {
+      pcslite = prev.pcslite.override {systemdSupport = false;};
+      openssh = prev.openssh.override {withFIDO = false;};
+      util-linux = prev.util-linux.override {
         systemd = null;
         systemdSupport = false;
       };
