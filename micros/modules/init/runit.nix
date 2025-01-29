@@ -31,11 +31,8 @@ in {
         default = ''
           #!${pkgs.runtimeShell}
 
-          ED25519_KEY="/etc/ssh/ssh_host_ed25519_key"
-          if [ ! -f $ED25519_KEY ]; then
-            echo $ED25519_KEY not found. Creating it.
-            ${pkgs.openssh}/bin/ssh-keygen -t ed25519 -f $ED25519_KEY -N ""
-          fi
+          # If /etc/ssh is missing, create it.
+          [ ! -d /etc/ssh ] && mkdir -p /etc/ssh
 
           ${optionalString cfg.simpleStaticIp.enable ''
             # Assign a static IP to a given interface with a set IP, route and gateway.
@@ -45,10 +42,19 @@ in {
             ip route add default via ${cfg.simpleStaticIp.gateway} dev ${cfg.simpleStaticIp.interface}
           ''}
 
+          # Link /bin/sh from environment.binsh, defaults to ash from buxybox.
           mkdir /bin
-          ln -s ${pkgs.runtimeShell} /bin/sh
+          ln -s ${config.environment.binsh} /bin/sh
+
+          ${optionalString config.networking.dhcp.enable ''
+            # Network discovery
+            mkdir -p /var/db/dhcpcd /var/run/dhcpcd
+            touch /etc/dhcpcd.conf
+            ${pkgs.dhcpcd}/sbin/dhcpcd --oneshot
+          ''}
 
           ${optionalString (config.networking.timeServers != []) ''
+            # Configure timeservers
             ${pkgs.ntp}/bin/ntpdate ${toString config.networking.timeServers}
           ''}
 
@@ -57,11 +63,6 @@ in {
 
           touch /etc/runit/stopit
           chmod 0 /etc/runit/stopit
-          ${
-            if true
-            then ""
-            else "${pkgs.dhcpcd}/sbin/dhcpcd"
-          }
         '';
       };
 
@@ -73,7 +74,8 @@ in {
 
           # Watch the /etc/service directory for files
           # used to configure a monitored service.
-          exec runsvdir -P /etc/service
+          mkdir -p /etc/service
+          exec ${pkgs.runit}/bin/runsvdir -P /etc/service
         '';
       };
 
@@ -81,7 +83,25 @@ in {
         type = types.lines;
         default = ''
           #!${pkgs.runtimeShell}
-          echo and down we go
+
+          echo Waiting for services to stop...
+          sv force-stop /etc/service/*
+          sv exit /etc/service/*
+
+          echo Sending TERM signal to processes...
+          pkill --inverse -s0,1 -TERM
+          sleep 1
+
+          echo Sending KILL signal to processes...
+          pkill --inverse -s0,1 -KILL
+
+          echo Unmounting filesystems, disabling swap...
+          swapoff -a
+          umount -r -a -t nosysfs,noproc,nodevtmpfs,notmpfs
+
+          echo Remounting rootfs read-only...
+          mount -o remount,ro /
+          sync
         '';
       };
     };
@@ -90,6 +110,8 @@ in {
   config = {
     environment.systemPackages = [runit-compat];
     environment.etc = {
+      # Runit has three stages: booting, running and shutdown in runit/ 1,2 and 3 respectively.
+      # We create each stage manually and link them here.
       "runit/1".source = pkgs.writeScript "runit-stage-1" cfg.runit.stage-1;
       "runit/2".source = pkgs.writeScript "runit-stage-2" cfg.runit.stage-2;
       "runit/3".source = pkgs.writeScript "runit-strage-3" cfg.runit.stage-3;
