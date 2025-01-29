@@ -44,7 +44,7 @@ in {
     };
 
     networking = {
-      networking.hostName = mkOption {
+      hostName = mkOption {
         default = "micros"; # this defaults to distroId in nixpkgs, which we do not have.
 
         # Only allow hostnames without the domain name part (i.e. no FQDNs, see
