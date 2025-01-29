@@ -1,13 +1,12 @@
 {
   nixpkgs.overlays = [
     (_final: prev: {
+      dhcpcd = prev.dhcpcd.override {udev = null;};
+      procps = prev.procps.override {withSystemd = false;};
       utillinux = prev.utillinux.override {
         systemd = null;
         systemdSupport = false;
       };
-
-      dhcpcd = prev.dhcpcd.override {udev = null;};
-      gnutls = prev.gnutls.overrideAttrs {doCheck = false;};
 
       plymouth = prev.plymouth.override {
         udev = null;
