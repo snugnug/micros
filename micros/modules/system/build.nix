@@ -30,7 +30,7 @@ in {
   config = {
     system.build.earlyMountScript = pkgs.emptyDirectory;
 
-    system.build.runvm = pkgs.writeScript "runner" ''
+    system.build.runvm = pkgs.writeScript "notos-vm-runner" ''
       #!${pkgs.stdenv.shell}
       exec ${pkgs.qemu_kvm}/bin/qemu-kvm -name not-os -m 512 \
         -drive index=0,id=drive1,file=${config.system.build.squashfs},readonly,media=cdrom,format=raw,if=virtio \
@@ -51,18 +51,21 @@ in {
 
     # nix-build -A system.build.toplevel && du -h $(nix-store -qR result) --max=0 -BM|sort -n
     system.build.toplevel =
-      pkgs.runCommand "not-os" {
+      pkgs.runCommand "not-os-toplevel" {
         activationScript = config.system.activationScripts.script;
       } ''
         mkdir $out
+
         cp ${config.system.build.bootStage2} $out/init
         substituteInPlace $out/init --subst-var-by systemConfig $out
         ln -s ${config.system.path} $out/sw
         echo "$activationScript" > $out/activate
         substituteInPlace $out/activate --subst-var out
         chmod u+x $out/activate
+
         unset activationScript
       '';
+
     # nix-build -A squashfs && ls -lLh result
     system.build.squashfs = pkgs.callPackage (pkgs.path + "/nixos/lib/make-squashfs.nix") {
       storeContents = [config.system.build.toplevel];
