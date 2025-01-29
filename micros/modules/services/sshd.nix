@@ -19,9 +19,9 @@
   cfg = config.services.sshd;
 in {
   options = {
-    services.sshd = mkOption {
+    services.sshd = {
       enable = mkEnableOption "sshd";
-      package = mkPackageOption pkgs "sshd";
+      package = mkPackageOption pkgs "openssh" {};
     };
   };
 

@@ -9,9 +9,9 @@
   cfg = config.services.nix-daemon;
 in {
   options = {
-    services.rngd = mkOption {
+    services.rngd = {
       enable = mkEnableOption "rngd";
-      package = mkPackageOption pkgs "rng-tools";
+      package = mkPackageOption pkgs "rng-tools" {};
     };
   };
 

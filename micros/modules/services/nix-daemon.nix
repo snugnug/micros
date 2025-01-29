@@ -9,9 +9,9 @@
   cfg = config.services.nix-daemon;
 in {
   options = {
-    services.nix-daemon = mkOption {
+    services.nix-daemon = {
       enable = mkEnableOption "nix-daemon";
-      package = mkPackageOption pkgs "nix";
+      package = mkPackageOption pkgs "nix" {};
     };
   };
 

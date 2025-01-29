@@ -168,7 +168,7 @@
     mkdir -p /mnt/nix/store/
 
     ${
-      if config.not-os.nix.enable
+      if config.nix.enable
       then ''
         # make the store writeable
         mkdir -p /mnt/nix/.ro-store /mnt/nix/.overlay-store /mnt/nix/store
@@ -218,6 +218,6 @@ in {
     system.build.initialRamdisk = initialRamdisk;
     system.build.extraUtils = extraUtils;
     boot.initrd.availableKernelModules = [];
-    boot.initrd.kernelModules = ["tun" "loop" "squashfs"] ++ (lib.optional config.not-os.nix.enable "overlay");
+    boot.initrd.kernelModules = ["tun" "loop" "squashfs"] ++ (lib.optional config.nix.enable "overlay");
   };
 }
