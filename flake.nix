@@ -22,18 +22,21 @@
           ./boards/rpi/base.nix
 
           {
+            not-os.rpi1 = true;
+            not-os.rpi2 = true;
+
             system.build.rpi-firmware = raspi-firmware;
+
             nixpkgs.hostPlatform = {system = "armv7l-linux";};
             nixpkgs.buildPlatform = {system = "x86_64-linux";};
-
             nixpkgs.overlays = [
-              (self: super: {
-                openssh = super.openssh.override {
+              (final: prev: {
+                openssh = prev.openssh.override {
                   withFIDO = false;
                   withKerberos = false;
                 };
 
-                util-linux = super.util-linux.override {
+                util-linux = prev.util-linux.override {
                   pamSupport = false;
                   capabilitiesSupport = false;
                   ncursesSupport = false;
@@ -42,9 +45,8 @@
                   translateManpages = false;
                 };
 
-                utillinuxCurses = self.util-linux;
-                utillinuxMinimal = self.util-linux;
-                linux_rpi = self.legacyPackages.${system}.linux-rpi;
+                utillinuxCurses = prev.util-linux;
+                utillinuxMinimal = prev.util-linux;
               })
             ];
           }
@@ -62,8 +64,7 @@
         ];
       };
     in {
-      rpi-image = eval.config.system.build.rpi_image;
-      rpi-image-tar = eval.config.system.build.rpi_image_tar;
+      inherit (eval.config.system.build) rpi-image rpi-image-tar;
       rpi-runvm = eval.config.system.build.runvm;
       rpi-toplevel = eval.config.system.build.toplevel;
 
@@ -71,7 +72,7 @@
     });
 
     legacyPackages = forSupportedSystems (system: {
-      linux-rpi = nixpkgs.pkgs.${system}.callPackage ./pkgs/linux-rpi.nix {};
+      linux-rpi2 = nixpkgs.legacyPackages.${system}.callPackage ./pkgs/linux-rpi.nix {};
     });
 
     # Custom library to provide additional utilities for 3rd party consumption.

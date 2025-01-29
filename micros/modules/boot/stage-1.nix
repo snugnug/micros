@@ -92,8 +92,7 @@
     #!${shell}
   '';
 
-  bootStage1 = pkgs.writeScript "stage1" ''
-    #!${shell}
+  bootStage1 = pkgs.writeShellScriptBin "stage1" ''
     echo
     echo "[1;32m<<< NotOS Stage 1 >>>[0m"
     echo
@@ -166,6 +165,7 @@
     fi
     chmod 755 /mnt/
     mkdir -p /mnt/nix/store/
+    ${config.not-os.postMount}
 
     ${
       if config.nix.enable
@@ -191,7 +191,7 @@
       plymouth update-root-fs --new-root-dir=/mnt --read-write
     ''}
 
-    exec env -i $(type -P switch_root) /mnt/ $sysconfig/init
+    exec env -i "$(type -P switch_root)" /mnt/ "$sysconfig/init"
     exec ${shell}
   '';
 
@@ -202,12 +202,24 @@
         symlink = "/init";
       }
     ];
+
+    compressor =
+      if lib.versionAtLeast config.boot.kernelPackages.kernel.version "5.9"
+      then "zstd"
+      else "gzip";
   };
 in {
   options = {
-    not-os.preMount = mkOption {
-      type = types.lines;
-      default = "";
+    not-os = {
+      preMount = mkOption {
+        type = types.lines;
+        default = "";
+      };
+
+      postMount = mkOption {
+        type = types.lines;
+        default = "";
+      };
     };
 
     boot.initrd.enable = mkEnableOption "initrd" // {default = true;};
