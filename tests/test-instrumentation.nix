@@ -1,6 +1,4 @@
-{ pkgs, ... }:
-
-{
+{pkgs, ...}: {
   environment.etc = {
     "service/backdoor/run".source = pkgs.writeScript "backdoor_run" ''
       #!/bin/sh
@@ -25,6 +23,6 @@
       PS1= exec /bin/sh
     '';
   };
-  boot.initrd.availableKernelModules = [ "virtio_console" ];
-  boot.kernelParams = [ "panic=-1" ];
+  boot.initrd.availableKernelModules = ["virtio_console"];
+  boot.kernelParams = ["panic=-1"];
 }

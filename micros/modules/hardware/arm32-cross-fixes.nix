@@ -8,10 +8,10 @@
         doCheck = false;
         doInstallCheck = false;
       });
-      systemd = super.systemd.override { withEfi = false; };
-      util-linux = super.util-linux.override { systemdSupport = false; };
-      procps = super.procps.override { withSystemd = false; };
-      nix = super.nix.override { enableDocumentation = false; };
+      systemd = super.systemd.override {withEfi = false;};
+      util-linux = super.util-linux.override {systemdSupport = false;};
+      procps = super.procps.override {withSystemd = false;};
+      nix = super.nix.override {enableDocumentation = false;};
     })
   ];
 }

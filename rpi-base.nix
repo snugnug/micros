@@ -1,6 +1,9 @@
-{ config, lib, pkgs, ... }:
-
-let
+{
+  config,
+  lib,
+  pkgs,
+  ...
+}: let
 in {
   options = {
     rpi.rpi1 = lib.mkEnableOption "support pi1";

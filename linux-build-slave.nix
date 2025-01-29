@@ -1,4 +1,8 @@
-{ sshKeyFile ? null, memory ? 512, rootsize ? "10g" }:
+{
+  sshKeyFile ? null,
+  memory ? 512,
+  rootsize ? "10g",
+}:
 # usage: nix-build linux-build-slave.nix -I nixpkgs=https://github.com/nixos/nixpkgs/archive/c29d2fde74d.tar.gz --arg sshKeyFile ~/.ssh/id_rsa.pub
 let
   pkgs = import <nixpkgs> {};
@@ -6,8 +10,8 @@ let
     inherit configuration;
     system = "x86_64-linux";
   };
-  configuration = { pkgs, ... }: {
-    imports = [ ./qemu.nix ];
+  configuration = {pkgs, ...}: {
+    imports = [./qemu.nix];
     not-os = {
       nix = true;
       simpleStaticIp = true;
@@ -15,12 +19,16 @@ let
         ${pkgs.e2fsprogs}/bin/mkfs.ext4 $realroot || true
       '';
     };
-    boot.kernelParams = [ "realroot=/dev/vdb" ];
-    boot.initrd.kernelModules = [ "ext4" "crc32c_generic" ];
-    environment.systemPackages = with pkgs; [ ];
+    boot.kernelParams = ["realroot=/dev/vdb"];
+    boot.initrd.kernelModules = ["ext4" "crc32c_generic"];
+    environment.systemPackages = with pkgs; [];
     environment.etc = {
       "ssh/authorized_keys.d/root" = {
-        text = "${if (sshKeyFile != null) then builtins.readFile sshKeyFile else ""}";
+        text = "${
+          if (sshKeyFile != null)
+          then builtins.readFile sshKeyFile
+          else ""
+        }";
         mode = "0444";
       };
     };
