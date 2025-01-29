@@ -4,7 +4,6 @@
   ./boot/stage-1.nix
   ./boot/stage-2.nix
 
-  ./hardware/arm32-cross-fixes.nix
   ./hardware/firmware.nix
 
   ./init/runit.nix
