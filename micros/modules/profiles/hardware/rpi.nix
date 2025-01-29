@@ -7,6 +7,7 @@
   inherit (lib) mkOption mkEnableOption;
   inherit (lib) mkIf mkMerge;
   inherit (lib) types;
+
   cfg = config.not-os;
 in {
   options.not-os = {
