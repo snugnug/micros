@@ -1,8 +1,10 @@
-{ config, pkgs, ... }:
-
-let
+{
+  config,
+  pkgs,
+  ...
+}: let
   # dont use overlays for the qemu, it causes a lot of wasted time on recompiles
-  x86pkgs = import pkgs.path { system = "x86_64-linux"; };
+  x86pkgs = import pkgs.path {system = "x86_64-linux";};
   customKernel = pkgs.linux.override {
     extraConfig = ''
       OVERLAY_FS y
@@ -10,7 +12,7 @@ let
   };
   customKernelPackages = pkgs.linuxPackagesFor customKernel;
 in {
-  imports = [ ./arm32-cross-fixes.nix ];
+  #imports = [ ./arm32-cross-fixes.nix ];
   boot.kernelPackages = customKernelPackages;
   nixpkgs.system = "armv7l-linux";
   system.build.zynq_image = let
@@ -36,29 +38,30 @@ in {
         -drive file=/tmp/root.squashfs,if=sd,format=raw \
         -append "${cmdline}"
     '';
-  in pkgs.runCommand "zynq_image" {
-    inherit qemuScript;
-    passAsFile = [ "qemuScript" ];
-    preferLocalBuild = true;
-  } ''
-    mkdir $out
-    cd $out
-    cp -s ${config.system.build.squashfs} root.squashfs
-    cp -s ${config.system.build.kernel}/*zImage .
-    cp -s ${config.system.build.initialRamdisk}/initrd initrd
-    cp -s ${config.system.build.kernel}/dtbs/zynq-zc702.dtb .
-    ln -sv ${config.system.build.toplevel} toplevel
-    cp $qemuScriptPath qemu-script
-    chmod +x qemu-script
-    patchShebangs qemu-script
-    ls -ltrh
-  '';
+  in
+    pkgs.runCommand "zynq_image" {
+      inherit qemuScript;
+      passAsFile = ["qemuScript"];
+      preferLocalBuild = true;
+    } ''
+      mkdir $out
+      cd $out
+      cp -s ${config.system.build.squashfs} root.squashfs
+      cp -s ${config.system.build.kernel}/*zImage .
+      cp -s ${config.system.build.initialRamdisk}/initrd initrd
+      cp -s ${config.system.build.kernel}/dtbs/zynq-zc702.dtb .
+      ln -sv ${config.system.build.toplevel} toplevel
+      cp $qemuScriptPath qemu-script
+      chmod +x qemu-script
+      patchShebangs qemu-script
+      ls -ltrh
+    '';
   system.build.rpi_image_tar = pkgs.runCommand "dist.tar" {} ''
     mkdir -p $out/nix-support
     tar -cvf $out/dist.tar ${config.system.build.rpi_image}
     echo "file binary-dist $out/dist.tar" >> $out/nix-support/hydra-build-products
   '';
-  environment.systemPackages = [ pkgs.strace ];
+  environment.systemPackages = [pkgs.strace];
   environment.etc."service/getty/run".source = pkgs.writeShellScript "getty" ''
     agetty ttyPS0 115200
   '';

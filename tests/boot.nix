@@ -1,11 +1,12 @@
-{ system }:
+{stdenv, ...}: let
+  inherit (import <nixpkgs/nixos/lib/testing-python.nix> {inherit (stdenv) system;}) makeTest;
 
-with import <nixpkgs/nixos/lib/testing-python.nix> { inherit system; };
-
-let
-  config = (import ./.. { inherit system; extraModules = [ ./test-instrumentation.nix ../qemu.nix ]; }).config;
-in
-{
+  baseConfig =
+    (import ../micros/lib/eval-config.nix {
+      modules = [./test-instrumentation.nix ../qemu.nix];
+    })
+    .config;
+in {
   ipxeCrypto = makeTest {
     name = "ipxe-crypto";
     nodes = {};
@@ -14,7 +15,7 @@ in
 
       machine = create_machine(
           {
-              "qemuFlags": "-device virtio-rng-pci -kernel ${config.system.build.ipxe}/ipxe.lkrn -m 768 -net nic,model=e1000 -net user,tftp=${config.system.build.ftpdir}/",
+              "qemuFlags": "-device virtio-rng-pci -kernel ${baseConfig.system.build.ipxe}/ipxe.lkrn -m 768 -net nic,model=e1000 -net user,tftp=${baseConfig.system.build.ftpdir}/",
           }
       )
       machine.start()
@@ -31,7 +32,7 @@ in
     testScript = ''
       machine = create_machine(
           {
-              "qemuFlags": '-device virtio-rng-pci -kernel ${config.system.build.kernel}/bzImage -initrd ${config.system.build.initialRamdisk}/initrd -append "console=tty0 console=ttyS0 ${toString config.boot.kernelParams}" -drive index=0,id=drive1,file=${config.system.build.squashfs},readonly,media=cdrom,format=raw,if=virtio',
+              "qemuFlags": '-device virtio-rng-pci -kernel ${baseConfig.system.build.kernel}/bzImage -initrd ${baseConfig.system.build.initialRamdisk}/initrd -append "console=tty0 console=ttyS0 ${toString baseConfig.boot.kernelParams}" -drive index=0,id=drive1,file=${baseConfig.system.build.squashfs},readonly,media=cdrom,format=raw,if=virtio',
           }
       )
       machine.start()

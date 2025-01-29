@@ -1,43 +1,79 @@
 {
   inputs = {
-    firmware = {
+    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
+    raspi-firmware = {
       url = "github:raspberrypi/firmware";
       flake = false;
     };
   };
-  outputs = { self, nixpkgs, firmware }: {
+
+  outputs = {
+    self,
+    nixpkgs,
+    raspi-firmware,
+  }: let
+    microsSystem = args:
+      import ./micros/lib/eval-config.nix (
+        {
+          inherit nixpkgs;
+
+          # Allow system to be set modularly in nixpkgs.system.
+          # We set it to null, to remove the "legacy" entrypoint's
+          # non-hermetic default.
+          system = null;
+
+          modules =
+            args.modules
+            ++ [
+              # This module is injected here since it exposes the nixpkgs self-path in as
+              # constrained of contexts as possible to avoid more things depending on it and
+              # introducing unnecessary potential fragility to changes in flakes itself.
+              #
+              # See: failed attempt to make pkgs.path not copy when using flakes:
+              # https://github.com/NixOS/nixpkgs/pull/153594#issuecomment-1023287913
+              ({
+                config,
+                pkgs,
+                lib,
+                ...
+              }: {
+                config.nixpkgs.flake.source = self.outPath;
+              })
+            ];
+        }
+        // builtins.removeAttrs args ["modules"]
+      );
+  in {
     packages.armv7l-linux = let
-      platforms = (import nixpkgs { config = {}; }).platforms;
-      eval = (import ./default.nix {
-        extraModules = [
+      eval = microsSystem {
+        modules = [
           ./rpi_image.nix
-          { system.build.rpi_firmware = firmware; }
+
+          {
+            system.build.rpi_firmware = raspi-firmware;
+            nixpkgs.hostPlatform = {system = "armv7l-linux";};
+            nixpkgs.buildPlatform = {system = "x86_64-linux";};
+          }
         ];
-        platform = system: platforms.raspberrypi2;
-        system = "x86_64-linux";
-        crossSystem.system = "armv7l-linux";
-        inherit nixpkgs;
-      });
-      zynq_eval = (import ./. {
-        extraModules = [
-          ./zynq_image.nix
-        ];
-        platform = system: platforms.raspberrypi2;
-        system = "x86_64-linux";
-        crossSystem.system = "armv7l-linux";
-        inherit nixpkgs;
-      });
-    in {
-      rpi_image = eval.config.system.build.rpi_image;
-      rpi_image_tar = eval.config.system.build.rpi_image_tar;
-      toplevel = eval.config.system.build.toplevel;
-      zynq_image = zynq_eval.config.system.build.zynq_image;
-    };
-    hydraJobs = {
-      armv7l-linux = {
-        rpi_image_tar = self.packages.armv7l-linux.rpi_image_tar;
-        zynq_image = self.packages.armv7l-linux.zynq_image;
       };
+
+      zynq_eval = microsSystem {
+        modules = [
+          ./zynq_image.nix
+
+          {
+            nixpkgs.hostPlatform = {system = "armv7l-linux";};
+            nixpkgs.buildPlatform = {system = "x86_64-linux";};
+          }
+        ];
+      };
+    in {
+      rpi-image = eval.config.system.build.rpi_image;
+      rpi-image-tar = eval.config.system.build.rpi_image_tar;
+      rpi-runvm = eval.config.system.build.runvm;
+      rpi-toplevel = eval.config.system.build.toplevel;
+
+      zynq-image = zynq_eval.config.system.build.zynq_image;
     };
   };
 }

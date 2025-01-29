@@ -3,9 +3,8 @@
 systemConfig=@systemConfig@
 export PATH=@path@/bin/
 
-# Print a greeting.
 echo
-echo -e "\e[1;32m<<< NotOS Stage 2 >>>\e[0m"
+echo -e "\e[1;32m<<< MicrOS Stage 2 >>>\e[0m"
 echo
 
 mkdir -p /proc /sys /dev /tmp /var/log /etc /root /run /nix/var/nix/gcroots
