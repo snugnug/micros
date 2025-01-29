@@ -14,12 +14,13 @@
   }: let
     inherit (self) lib;
 
-    forSupportedSystems = lib.genAttrs ["armv7l-linux"];
+    forSupportedSystems = lib.genAttrs ["x86_64-linux" "aarch64-linux" "armv7l-linux"];
   in {
-    packages = forSupportedSystems (system: let
-      eval = lib.microsSystem {
+    packages = forSupportedSystems (system: {
+      rpi = lib.microsSystem {
         modules = [
-          ./boards/rpi/base.nix
+          ./micros/modules/profiles/hardware/rpi.nix
+          ./micros/modules/profiles/hardware/arm32-cross.nix
 
           {
             not-os.rpi1 = true;
@@ -27,8 +28,7 @@
 
             system.build.rpi-firmware = raspi-firmware;
 
-            nixpkgs.hostPlatform = {system = "armv7l-linux";};
-            nixpkgs.buildPlatform = {system = "x86_64-linux";};
+            nixpkgs.hostPlatform = {inherit system;};
             nixpkgs.overlays = [
               (final: prev: {
                 openssh = prev.openssh.override {
@@ -53,22 +53,26 @@
         ];
       };
 
-      zynq_eval = lib.microsSystem {
+      zynq = lib.microsSystem {
         modules = [
-          ./zynq_image.nix
+          ./micros/modules/profiles/hardware/zynq.nix
+          ./micros/modules/profiles/hardware/arm32-cross.nix
 
           {
-            nixpkgs.hostPlatform = {system = "armv7l-linux";};
-            nixpkgs.buildPlatform = {system = "x86_64-linux";};
+            nixpkgs.hostPlatform = {inherit system;};
           }
         ];
       };
-    in {
-      inherit (eval.config.system.build) rpi-image rpi-image-tar;
-      rpi-runvm = eval.config.system.build.runvm;
-      rpi-toplevel = eval.config.system.build.toplevel;
 
-      zynq-image = zynq_eval.config.system.build.zynq_image;
+      qemu = lib.microsSystem {
+        modules = [
+          ./micros/modules/profiles/virtualization/qemu-guest.nix
+
+          {
+            nixpkgs.hostPlatform = {inherit system;};
+          }
+        ];
+      };
     });
 
     legacyPackages = forSupportedSystems (system: {
