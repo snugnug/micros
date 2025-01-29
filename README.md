@@ -51,6 +51,15 @@ Above configuration enough to construct a basic system. You may build different
 components of the configuration, available under `config.system.build` to create
 different build artifacts for different workflows.
 
+## Contributing
+
+Contributions are always welcome. Please remember to write comments in
+particularly complex areas if adding new modules, or refactoring existing
+modules.
+
+You may visit [runit/runscripts](https://smarden.org/runit/runscripts#sshd) for
+additional services that could be upstreamed to MicrOS.
+
 ## License
 
 MicrOS is a _soft_-fork of not-os, plain and simple. Any and all work here is
