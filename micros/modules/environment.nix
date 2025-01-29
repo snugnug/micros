@@ -12,7 +12,6 @@ in {
       extraInit = mkOption {
         default = "";
         type = types.lines;
-
         description = ''
           Shell script code called during global environment initialisation
           after all variables and profileVariables have been set.

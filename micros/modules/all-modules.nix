@@ -8,7 +8,9 @@
   ./hardware/firmware.nix
 
   ./init/runit.nix
-  ./services # FIXME: temporary, each service will get its own module
+  ./services/nix-daemon.nix
+  ./services/rngd.nix
+  ./services/sshd.nix
 
   ./system/activation.nix
   ./system/build.nix
