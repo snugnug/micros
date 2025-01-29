@@ -21,7 +21,6 @@
   ./nix.nix
   ./nixpkgs.nix
   ./nixpkgs-flake.nix
-  ./qemu.nix
   ./system-path.nix
   ./systemd-compat.nix
 ]
