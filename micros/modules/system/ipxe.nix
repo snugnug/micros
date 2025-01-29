@@ -1,6 +1,8 @@
-{ pkgs, config, ... }:
-
-let
+{
+  pkgs,
+  config,
+  ...
+}: let
   ipxe_script = pkgs.writeText "script.ipxe" ''
     #!ipxe
     :restart
@@ -47,7 +49,7 @@ let
     :is_correct
     shell
   '';
-  ftpdir = pkgs.runCommand "ftpdir" { buildInputs = [ pkgs.openssl ]; } ''
+  ftpdir = pkgs.runCommand "ftpdir" {buildInputs = [pkgs.openssl];} ''
     mkdir $out
     ln -sv ${config.system.build.dist}/kernel $out/
     ln -sv ${config.system.build.dist}/initrd $out/
@@ -61,7 +63,7 @@ let
     signit $out/script.ipxe
     signit $out/root.squashfs
   '';
-  ipxe = pkgs.lib.overrideDerivation pkgs.ipxe (x: {
+  ipxe = pkgs.lib.overrideDerivation pkgs.ipxe (oldAttrs: {
     script = pkgs.writeText "embed.ipxe" ''
       #!ipxe
       imgtrust --permanent
@@ -72,18 +74,24 @@ let
       echo temporary debug shell
       shell
     '';
-    ca_cert = ./ca/root.pem;
-    nativeBuildInputs = x.nativeBuildInputs ++ [ pkgs.openssl ];
-    makeFlags = x.makeFlags ++ [
-      ''EMBED=''${script}''
-      ''TRUST=''${ca_cert}''
-      "CERT=${./ca/codesign.crt},${./ca/root.pem}"
-      #"bin-i386-efi/ipxe.efi" "bin-i386-efi/ipxe.efidrv"
-    ];
 
-    enabledOptions = x.enabledOptions ++ [ "CONSOLE_SERIAL" "POWEROFF_CMD" "IMAGE_TRUST_CMD" ];
+    ca_cert = ./ca/root.pem;
+    nativeBuildInputs = oldAttrs.nativeBuildInputs ++ [pkgs.openssl];
+    makeFlags =
+      (oldAttrs.makeFlags or [])
+      ++ [
+        ''EMBED=''${script}''
+        ''TRUST=''${ca_cert}''
+        "CERT=${./ca/codesign.crt},${./ca/root.pem}"
+        #"bin-i386-efi/ipxe.efi" "bin-i386-efi/ipxe.efidrv"
+      ];
+
+    enabledOptions =
+      (oldAttrs.enabledOptions or [])
+      ++ ["CONSOLE_SERIAL" "POWEROFF_CMD" "IMAGE_TRUST_CMD"];
   });
-  testipxe = pkgs.writeScript "runner" ''
+
+  testipxe = pkgs.writeScript "ipxe-test-runner" ''
     #!${pkgs.stdenv.shell}
     exec ${pkgs.qemu_kvm}/bin/qemu-kvm -name not-os -m 512 \
       -kernel ${ipxe}/ipxe.lkrn  \
@@ -92,10 +100,8 @@ let
       -net dump,vlan=0 \
       -device virtio-rng-pci -serial stdio
   '';
-in
-{
-  options = {
-  };
+in {
+  options = {};
   config = {
     system.build = {
       inherit ipxe_script ftpdir ipxe testipxe;

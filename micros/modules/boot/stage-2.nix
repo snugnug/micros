@@ -28,6 +28,7 @@ in {
       };
     };
   };
+
   config = {
     system.build.bootStage2 = pkgs.substituteAll {
       src = ./stage-2-init.sh;

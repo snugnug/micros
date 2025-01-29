@@ -4,20 +4,35 @@
   lib,
   ...
 }: let
-  inherit (lib) mkOption;
+  inherit (lib) mkOption literalExpression;
   inherit (lib) types;
 in {
   options = {
-    environment.extraInit = mkOption {
-      default = "";
-      type = types.lines;
+    environment = {
+      extraInit = mkOption {
+        default = "";
+        type = types.lines;
 
-      description = ''
-        Shell script code called during global environment initialisation
-        after all variables and profileVariables have been set.
-        This code is assumed to be shell-independent, which means you should
-        stick to pure sh without sh word split.
-      '';
+        description = ''
+          Shell script code called during global environment initialisation
+          after all variables and profileVariables have been set.
+          This code is assumed to be shell-independent, which means you should
+          stick to pure sh without sh word split.
+        '';
+      };
+
+      binsh = mkOption {
+        default = "${config.system.build.binsh}/bin/sh";
+        defaultText = literalExpression ''"''${config.system.build.binsh}/bin/sh"'';
+        example = literalExpression ''"''${pkgs.dash}/bin/dash"'';
+        type = types.path;
+        description = ''
+          The shell executable that is linked system-wide to
+          `/bin/sh`. Please note that NixOS assumes all
+          over the place that shell to be Bash, so override the default
+          setting only if you know exactly what you're doing.
+        '';
+      };
     };
   };
 

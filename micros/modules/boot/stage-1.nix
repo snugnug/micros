@@ -194,6 +194,7 @@
     exec env -i $(type -P switch_root) /mnt/ $sysconfig/init
     exec ${shell}
   '';
+
   initialRamdisk = pkgs.makeInitrd {
     contents = [
       {
