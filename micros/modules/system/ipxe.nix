@@ -49,6 +49,7 @@
     :is_correct
     shell
   '';
+
   ftpdir = pkgs.runCommand "ftpdir" {buildInputs = [pkgs.openssl];} ''
     mkdir $out
     ln -sv ${config.system.build.dist}/kernel $out/
@@ -63,6 +64,7 @@
     signit $out/script.ipxe
     signit $out/root.squashfs
   '';
+
   ipxe = pkgs.lib.overrideDerivation pkgs.ipxe (oldAttrs: {
     script = pkgs.writeText "embed.ipxe" ''
       #!ipxe

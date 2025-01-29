@@ -1,14 +1,13 @@
 {
   stdenv,
   fetchFromGitHub,
-  perl,
   buildLinux,
   ...
 } @ args: let
   modDirVersion = "4.4.36";
   tag = "1.20161020-1";
-in
-  stdenv.lib.overrideDerivation (import <nixpkgs/pkgs/os-specific/linux/kernel/generic.nix> (args
+
+  linux = buildLinux (args
     // rec {
       version = "${modDirVersion}-${tag}";
       inherit modDirVersion;
@@ -26,7 +25,9 @@ in
       features.netfilterRPFilter = true;
 
       extraMeta.hydraPlatforms = [];
-    })) (oldAttrs: {
+    });
+in
+  linux.overrideAttrs {
     postConfigure = ''
       # The v7 defconfig has this set to '-v7' which screws up our modDirVersion.
       sed -i $buildRoot/.config -e 's/^CONFIG_LOCALVERSION=.*/CONFIG_LOCALVERSION=""/'
@@ -52,4 +53,4 @@ in
       copyDTB bcm2709-rpi-2-b.dtb bcm2836-rpi-2-b.dtb
       copyDTB bcm2710-rpi-3-b.dtb bcm2837-rpi-3-b.dtb
     '';
-  })
+  }

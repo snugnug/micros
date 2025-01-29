@@ -15,7 +15,7 @@ in {
     nix = {
       enable = mkOption {
         type = types.bool;
-        default = config.not-os.nix.enable;
+        default = false; # strip Nix from the final closure, we are not anticipating rebuilds
         description = ''
           Whether to enable Nix.
 
@@ -127,10 +127,25 @@ in {
   };
 
   config = mkIf cfg.enable {
-    environment.systemPackages = [cfg.package];
-    environment.etc."nix/registry.json".text = builtins.toJSON {
-      version = 2;
-      flakes = mapAttrsToList (_: v: {inherit (v) from to exact;}) cfg.registry;
+    environment = {
+      systemPackages = [cfg.package];
+      etc = {
+        "nix/registry.json".text = builtins.toJSON {
+          version = 2;
+          flakes = mapAttrsToList (_: v: {inherit (v) from to exact;}) cfg.registry;
+        };
+
+        "nix/nix.conf".source = pkgs.runCommand "nix.conf" {} ''
+          extraPaths=$(for i in $(cat ${pkgs.writeClosure pkgs.runtimeShell}); do if test -d $i; then echo $i; fi; done)
+          cat > $out << EOF
+          build-use-sandbox = true
+          build-users-group = nixbld
+          build-sandbox-paths = /bin/sh=${pkgs.runtimeShell} $(echo $extraPaths)
+          build-max-jobs = 1
+          build-cores = 4
+          EOF
+        '';
+      };
     };
   };
 }

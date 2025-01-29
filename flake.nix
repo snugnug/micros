@@ -13,46 +13,50 @@
     raspi-firmware,
   }: let
     inherit (self) lib;
+
+    forSupportedSystems = lib.genAttrs ["armv7l-linux"];
   in {
-    packages = {
-      armv7l-linux = let
-        eval = lib.microsSystem {
-          modules = [
-            ./rpi_image.nix
+    packages = forSupportedSystems (system: let
+      eval = lib.microsSystem {
+        modules = [
+          ./boards/rpi/base.nix
 
-            {
-              system.build.rpi_firmware = raspi-firmware;
-              nixpkgs.hostPlatform = {system = "armv7l-linux";};
-              nixpkgs.buildPlatform = {system = "x86_64-linux";};
-            }
-          ];
-        };
-
-        zynq_eval = lib.microsSystem {
-          modules = [
-            ./zynq_image.nix
-
-            {
-              nixpkgs.hostPlatform = {system = "armv7l-linux";};
-              nixpkgs.buildPlatform = {system = "x86_64-linux";};
-            }
-          ];
-        };
-      in {
-        rpi-image = eval.config.system.build.rpi_image;
-        rpi-image-tar = eval.config.system.build.rpi_image_tar;
-        rpi-runvm = eval.config.system.build.runvm;
-        rpi-toplevel = eval.config.system.build.toplevel;
-
-        zynq-image = zynq_eval.config.system.build.zynq_image;
+          {
+            system.build.rpi_firmware = raspi-firmware;
+            nixpkgs.hostPlatform = {system = "armv7l-linux";};
+            nixpkgs.buildPlatform = {system = "x86_64-linux";};
+          }
+        ];
       };
-    };
+
+      zynq_eval = lib.microsSystem {
+        modules = [
+          ./zynq_image.nix
+
+          {
+            nixpkgs.hostPlatform = {system = "armv7l-linux";};
+            nixpkgs.buildPlatform = {system = "x86_64-linux";};
+          }
+        ];
+      };
+    in {
+      rpi-image = eval.config.system.build.rpi_image;
+      rpi-image-tar = eval.config.system.build.rpi_image_tar;
+      rpi-runvm = eval.config.system.build.runvm;
+      rpi-toplevel = eval.config.system.build.toplevel;
+
+      zynq-image = zynq_eval.config.system.build.zynq_image;
+    });
+
+    legacyPackages = forSupportedSystems (system: {
+      linux-rpi = nixpkgs.pkgs.${system}.callPackage ./pkgs/linux-rpi.nix {};
+    });
 
     # Custom library to provide additional utilities for 3rd party consumption.
     # Primarily designed to expose `microsSystem` as, e.g., inputs.micros.lib.microsSystem
     # for when you are building non-supported platforms on your own accord.
     # TODO: extend nixpkgs.lib here
-    lib = {
+    lib = nixpkgs.lib.extend (_: _: {
       microsSystem = args:
         import ./micros/lib/eval-config.nix (
           {
@@ -84,6 +88,6 @@
           }
           // builtins.removeAttrs args ["modules"]
         );
-    };
+    });
   };
 }

@@ -15,12 +15,12 @@
   nixpkgsModules = map (x: "${nixpkgs}/nixos/modules/${x}") [
     "system/etc/etc.nix"
     "system/activation/activation-script.nix"
+    "system/boot/kernel.nix"
+    "config/sysctl.nix"
     "misc/nixpkgs.nix"
     "misc/nixpkgs-flake.nix"
-    "system/boot/kernel.nix"
     "misc/assertions.nix"
     "misc/lib.nix"
-    "config/sysctl.nix"
   ];
 
   evalModulesMinimal =

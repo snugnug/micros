@@ -16,7 +16,6 @@
   ./system/build.nix
   ./system/ipxe.nix
 
-  ./base.nix
   ./environment.nix
   ./networking.nix
   ./nix.nix
