@@ -92,7 +92,8 @@
     #!${shell}
   '';
 
-  bootStage1 = pkgs.writeShellScriptBin "stage1" ''
+  bootStage1 = pkgs.writeScript "stage1" ''
+    #!${shell}
     echo
     echo "[1;32m<<< NotOS Stage 1 >>>[0m"
     echo
@@ -196,10 +197,28 @@
   '';
 
   initialRamdisk = pkgs.makeInitrd {
+    name = "initrd-micros";
     contents = [
       {
         object = bootStage1;
         symlink = "/init";
+      }
+    ];
+
+    compressor =
+      if lib.versionAtLeast config.boot.kernelPackages.kernel.version "5.9"
+      then "zstd"
+      else "gzip";
+  };
+
+  netbootRamdisk = pkgs.makeInitrd {
+    name = "initrd-micros-netboot";
+    prepend = ["${config.system.build.initialRamdisk}/initrd"];
+
+    contents = [
+      {
+        object = config.system.build.squashfsStore;
+        symlink = "/nix-store.squashfs";
       }
     ];
 
@@ -226,10 +245,15 @@ in {
   };
 
   config = {
-    system.build.bootStage1 = bootStage1;
-    system.build.initialRamdisk = initialRamdisk;
-    system.build.extraUtils = extraUtils;
+    system.build = {
+      inherit bootStage1;
+      inherit initialRamdisk netbootRamdisk;
+      inherit extraUtils;
+    };
+
     boot.initrd.availableKernelModules = [];
-    boot.initrd.kernelModules = ["tun" "loop" "squashfs"] ++ (lib.optional config.nix.enable "overlay");
+    boot.initrd.kernelModules =
+      ["tun" "loop" "squashfs"]
+      ++ (lib.optional config.nix.enable "overlay");
   };
 }
