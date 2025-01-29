@@ -22,9 +22,31 @@
           ./boards/rpi/base.nix
 
           {
-            system.build.rpi_firmware = raspi-firmware;
+            system.build.rpi-firmware = raspi-firmware;
             nixpkgs.hostPlatform = {system = "armv7l-linux";};
             nixpkgs.buildPlatform = {system = "x86_64-linux";};
+
+            nixpkgs.overlays = [
+              (self: super: {
+                openssh = super.openssh.override {
+                  withFIDO = false;
+                  withKerberos = false;
+                };
+
+                util-linux = super.util-linux.override {
+                  pamSupport = false;
+                  capabilitiesSupport = false;
+                  ncursesSupport = false;
+                  systemdSupport = false;
+                  nlsSupport = false;
+                  translateManpages = false;
+                };
+
+                utillinuxCurses = self.util-linux;
+                utillinuxMinimal = self.util-linux;
+                linux_rpi = self.legacyPackages.${system}.linux-rpi;
+              })
+            ];
           }
         ];
       };
