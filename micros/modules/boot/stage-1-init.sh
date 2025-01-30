@@ -56,6 +56,71 @@ ln -s @extraUtils@/bin /bin
 ln -s @extraUtils@/bin /sbin
 ln -s @modulesClosure@/lib/modules /lib/modules
 
+# Make several required directories.
+mkdir -p /etc/udev
+touch /etc/fstab             # to shut up mount
+ln -s /proc/mounts /etc/mtab # to shut up mke2fs
+touch /etc/udev/hwdb.bin     # to shut up udev
+touch /etc/initrd-release
+
+# Function for waiting for device(s) to appear.
+waitDevice() {
+  local device="$1"
+  # Split device string using ':' as a delimiter, bcachefs uses
+  # this for multi-device filesystems, i.e. /dev/sda1:/dev/sda2:/dev/sda3
+  local IFS
+
+  # bcachefs is the only known use for this at the moment
+  # Preferably, the 'UUID=' syntax should be enforced, but
+  # this is kept for compatibility reasons
+  if [ "$fsType" = bcachefs ]; then IFS=':'; fi
+
+  # USB storage devices tend to appear with some delay.  It would be
+  # great if we had a way to synchronously wait for them, but
+  # alas...  So just wait for a few seconds for the device to
+  # appear.
+  for dev in $device; do
+    if test ! -e $dev; then
+      echo -n "waiting for device $dev to appear..."
+      try=20
+      while [ $try -gt 0 ]; do
+        sleep 1
+        # also re-try lvm activation now that new block devices might have appeared
+        lvm vgchange -ay
+        # and tell udev to create nodes for the new LVs
+        udevadm trigger --action=add
+        if test -e $dev; then break; fi
+        echo -n "."
+        try=$((try - 1))
+      done
+      echo
+      [ $try -ne 0 ]
+    fi
+  done
+}
+
+# Create the mount point if required.
+makeMountPoint() {
+  local device="$1"
+  local mountPoint="$2"
+  local options="$3"
+
+  local IFS=,
+
+  # If we're bind mounting a file, the mount point should also be a file.
+  if ! [ -d "$device" ]; then
+    for opt in $options; do
+      if [ "$opt" = bind ] || [ "$opt" = rbind ]; then
+        mkdir -p "$(dirname "/mnt-root$mountPoint")"
+        touch "/mnt-root$mountPoint"
+        return
+      fi
+    done
+  fi
+
+  mkdir -m 0755 -p "/mnt-root$mountPoint"
+}
+
 # Mount special file systems.
 specialMount() {
   local device="$1"
@@ -66,7 +131,6 @@ specialMount() {
   mkdir -m 0755 -p "$mountPoint"
   mount -n -t "$fsType" -o "$options" "$device" "$mountPoint"
 }
-
 source @earlyMountScript@
 
 mkdir -p /etc $targetRoot
