@@ -4,40 +4,93 @@
   lib,
   ...
 }: let
-  inherit (lib) mkOption mkEnableOption;
+  inherit (lib) mkOption mkEnableOption literalMD;
+  inherit (lib) optionalString;
   inherit (lib) types;
 
-  modules = pkgs.makeModulesClosure {
-    rootModules = config.boot.initrd.availableKernelModules ++ config.boot.initrd.kernelModules;
-    allowMissing = true;
+  kernel-name = config.boot.kernelPackages.kernel.name or "kernel";
+
+  # Determine the set of modules that we need to mount the root FS.
+  modulesClosure = pkgs.makeModulesClosure {
     kernel = config.system.build.kernel;
     firmware = config.hardware.firmware;
+    rootModules = config.boot.initrd.availableKernelModules ++ config.boot.initrd.kernelModules;
+    allowMissing = false;
   };
 
-  plymouth = pkgs.plymouth.overrideAttrs {
-    src = pkgs.fetchgit {
-      url = "https://anongit.freedesktop.org/git/plymouth";
-      rev = "266d954b7a0ff5b046df6ed54c22e3322b2c80d0";
-      sha256 = "10k7vfbfp3q1ysw3w5nd6wnixizbng3lqbb21bgd18v997k74xb3";
-    };
-  };
+  # A utility for enumerating the shared-library dependencies of a program
+  findLibs = pkgs.buildPackages.writeShellScriptBin "find-libs" ''
+    set -euo pipefail
+
+    declare -A seen
+    left=()
+
+    patchelf="${pkgs.buildPackages.patchelf}/bin/patchelf"
+
+    function add_needed {
+      rpath="$($patchelf --print-rpath $1)"
+      dir="$(dirname $1)"
+      for lib in $($patchelf --print-needed $1); do
+        left+=("$lib" "$rpath" "$dir")
+      done
+    }
+
+    add_needed "$1"
+
+    while [ ''${#left[@]} -ne 0 ]; do
+      next=''${left[0]}
+      rpath=''${left[1]}
+      ORIGIN=''${left[2]}
+      left=("''${left[@]:3}")
+      if [ -z ''${seen[$next]+x} ]; then
+        seen[$next]=1
+
+        # Ignore the dynamic linker which for some reason appears as a DT_NEEDED of glibc but isn't in glibc's RPATH.
+        case "$next" in
+          ld*.so.?) continue;;
+        esac
+
+        IFS=: read -ra paths <<< $rpath
+        res=
+        for path in "''${paths[@]}"; do
+          path=$(eval "echo $path")
+          if [ -f "$path/$next" ]; then
+              res="$path/$next"
+              echo "$res"
+              add_needed "$res"
+              break
+          fi
+        done
+        if [ -z "$res" ]; then
+          echo "Couldn't satisfy dependency $next" >&2
+          exit 1
+        fi
+      fi
+    done
+  '';
 
   extraUtils =
-    pkgs.runCommandCC "extra-utils" {
-      nativeBuildInputs = [pkgs.nukeReferences];
+    pkgs.runCommand "extra-utils" {
+      nativeBuildInputs = with pkgs.buildPackages; [nukeReferences bintools];
       allowedReferences = ["out"];
     } ''
       set +o pipefail
+
       mkdir -p $out/bin $out/lib
       ln -s $out/bin $out/sbin
 
-      copy_bin_and_libs() {
+      copy_bin_and_libs () {
         [ -f "$out/bin/$(basename $1)" ] && rm "$out/bin/$(basename $1)"
-        cp -pd $1 $out/bin
+        cp -pdv $1 $out/bin
       }
 
-      # Copy Busybox
+      # Copy BusyBox.
       for BIN in ${pkgs.busybox}/{s,}bin/*; do
+        copy_bin_and_libs $BIN
+      done
+
+      # Copy Runit
+      for BIN in ${pkgs.runit}/bin/*; do
         copy_bin_and_libs $BIN
       done
 
@@ -46,12 +99,10 @@
       # Copy ld manually since it isn't detected correctly
       cp -pv ${pkgs.glibc.out}/lib/ld*.so.? $out/lib
 
-      # Copy all of the needed libraries
-      find $out/bin $out/lib -type f | while read BIN; do
+      # Copy all of the needed libraries in a consistent order so
+      find $out/bin $out/lib -type f | sort | while read BIN; do
         echo "Copying libs for executable $BIN"
-        LDD="$(ldd $BIN)" || continue
-        LIBS="$(echo "$LDD" | awk '{print $3}' | sed '/^$/d')"
-        for LIB in $LIBS; do
+        for LIB in $(${findLibs}/bin/find-libs $BIN); do
           TGT="$out/lib/$(basename $LIB)"
           if [ ! -f "$TGT" ]; then
             SRC="$(readlink -e $LIB)"
@@ -62,153 +113,120 @@
 
       # Strip binaries further than normal.
       chmod -R u+w $out
-      stripDirs "lib bin" "-s"
+      stripDirs "$STRIP" "$RANLIB" "lib bin" "-s"
 
       # Run patchelf to make the programs refer to the copied libraries.
       find $out/bin $out/lib -type f | while read i; do
-        if ! test -L $i; then
-          nuke-refs -e $out $i
-        fi
+        nuke-refs -e $out $i
       done
 
       find $out/bin -type f | while read i; do
-        if ! test -L $i; then
-          echo "patching $i..."
-          patchelf --set-interpreter $out/lib/ld*.so.? --set-rpath $out/lib $i || true
-        fi
+        echo "patching $i..."
+        patchelf --set-interpreter $out/lib/ld*.so.? --set-rpath $out/lib $i || true
+      done
+
+      find $out/lib -type f \! -name 'ld*.so.?' | while read i; do
+        echo "patching $i..."
+        patchelf --set-rpath $out/lib $i
       done
 
       # Make sure that the patchelf'ed binaries still work.
       echo "testing patched programs..."
       $out/bin/ash -c 'echo hello world' | grep "hello world"
+
       export LD_LIBRARY_PATH=$out/lib
       $out/bin/mount --help 2>&1 | grep -q "BusyBox"
     '';
 
   shell = "${extraUtils}/bin/ash";
-  enablePlymouth = false;
 
   dhcpHook = pkgs.writeScript "dhcpHook" ''
     #!${shell}
   '';
 
-  bootStage1 = pkgs.writeScript "stage1" ''
-    #!${shell}
-    echo
-    echo "[1;32m<<< NotOS Stage 1 >>>[0m"
-    echo
+  bootStage1 = pkgs.replaceVarsWith {
+    src = ./stage-1-init.sh;
+    isExecutable = true;
 
-    export PATH=${extraUtils}/bin/${lib.optionalString enablePlymouth ":${plymouth}/bin/"}
-    mkdir -p /proc /sys /dev /etc/udev /tmp /run/ /lib/ /mnt/ /var/log /etc/plymouth /bin
-    mount -t devtmpfs devtmpfs /dev/
-    mount -t proc proc /proc
-    mount -t sysfs sysfs /sys
+    replacements = {
+      shell = "${extraUtils}/bin/ash";
 
-    ${lib.optionalString enablePlymouth ''
-      ln -sv ${plymouth}/lib/plymouth /etc/plymouth/plugins
-      ln -sv ${plymouth}/etc/plymouth/plymouthd.conf /etc/plymouth/plymouthd.conf
-      ln -sv ${plymouth}/share/plymouth/plymouthd.defaults /etc/plymouth//plymouthd.defaults
-      ln -sv ${plymouth}/share/plymouth/themes /etc/plymouth/themes
-      ln -sv /dev/fb0 /dev/fb
-    ''}
+      mountScript = ''
+        ${config.not-os.preMount}
+        if [ $realroot = tmpfs ]; then
+          mount -t tmpfs root /mnt/ -o size=1G || exec ${shell}
+        else
+          mount $realroot /mnt || exec ${shell}
+        fi
+        chmod 755 /mnt/
+        ${config.not-os.postMount}
+      '';
 
-    ln -sv ${shell} /bin/sh
-    ln -s ${modules}/lib/modules /lib/modules
+      storeMountScript =
+        if config.nix.enable
+        then ''
+          # make the store writeable
+          mkdir -p /mnt/nix/.ro-store /mnt/nix/.overlay-store /mnt/nix/store
+          mount $root /mnt/nix/.ro-store -t squashfs
+          if [ $realroot = $1 ]; then
+            mount tmpfs -t tmpfs /mnt/nix/.overlay-store -o size=1G
+          fi
+          mkdir -pv /mnt/nix/.overlay-store/work /mnt/nix/.overlay-store/rw
+          modprobe overlay
+          mount -t overlay overlay -o lowerdir=/mnt/nix/.ro-store,upperdir=/mnt/nix/.overlay-store/rw,workdir=/mnt/nix/.overlay-store/work /mnt/nix/store
+        ''
+        else ''
+          # readonly store
+          mount $root /mnt/nix/store/ -t squashfs
+        '';
 
-    ${lib.optionalString enablePlymouth ''
-      # gdb --args plymouthd --debug --mode=boot --no-daemon
-      sleep 1
-      plymouth --show-splash
-    ''}
+      setHostId = optionalString (config.networking.hostId != null) ''
+        hi="${config.networking.hostId}"
+        ${
+          if pkgs.stdenv.hostPlatform.isBigEndian
+          then ''
+            echo -ne "\x''${hi:0:2}\x''${hi:2:2}\x''${hi:4:2}\x''${hi:6:2}" > /etc/hostid
+          ''
+          else ''
+            echo -ne "\x''${hi:6:2}\x''${hi:4:2}\x''${hi:2:2}\x''${hi:0:2}" > /etc/hostid
+          ''
+        }
+      '';
 
+      inherit extraUtils dhcpHook modulesClosure;
 
-    for x in ${lib.concatStringsSep " " config.boot.initrd.kernelModules}; do
-      modprobe $x
-    done
+      inherit (config.boot.initrd) kernelModules;
+      inherit (config.system.build) earlyMountScript;
+    };
 
-    root=/dev/vda
-    realroot=tmpfs
-    for o in $(cat /proc/cmdline); do
-      case $o in
-        systemConfig=*)
-          set -- $(IFS==; echo $o)
-          sysconfig=$2
-          ;;
-        root=*)
-          set -- $(IFS==; echo $o)
-          root=$2
-          ;;
-        netroot=*)
-          set -- $(IFS==; echo $o)
-          mkdir -pv /var/run /var/db
-          ${lib.optionalString enablePlymouth ''plymouth display-message --text="waiting for eth"''}
-          sleep 5
-          ${lib.optionalString enablePlymouth ''plymouth display-message --text="dhcp query"''}
-          dhcpcd eth0 -c ${dhcpHook}
-          ${lib.optionalString enablePlymouth ''plymouth display-message --text="downloading rootfs"''}
-          tftp -g -r "$3" "$2"
-          root=/root.squashfs
-          ;;
-        realroot=*)
-          set -- $(IFS==; echo $o)
-          realroot=$2
-          ;;
-      esac
-    done
-
-    ${lib.optionalString enablePlymouth ''plymouth display-message --text="mounting things"''}
-
-    ${config.not-os.preMount}
-    if [ $realroot = tmpfs ]; then
-      mount -t tmpfs root /mnt/ -o size=1G || exec ${shell}
-    else
-      mount $realroot /mnt || exec ${shell}
-    fi
-    chmod 755 /mnt/
-    ${config.not-os.postMount}
-
-    mkdir -p /mnt/nix/store/
-    ${
-      if config.nix.enable && config.not-os.readOnlyNixStore
-      then ''
-        mkdir -p /mnt.ro /mnt.overlay
-        mount -o ro $root /mnt.ro
-        mount -t tmpfs -o size=1G tmpfs /mnt.overlay
-        mkdir -p /mnt.overlay/upper /mnt.overlay/work
-        mount -t overlay overlay -o lowerdir=/mnt.ro,upperdir=/mnt.overlay/upper,workdir=/mnt.overlay/work /mnt
-      ''
-      else ''
-        # readonly store
-        mount $root /mnt
-      ''
-    }
-
-    ${lib.optionalString enablePlymouth ''
-      plymouth --newroot=/mnt
-      plymouth update-root-fs --new-root-dir=/mnt --read-write
-    ''}
-
-    exec env -i "$(type -P switch_root)" /mnt/ "$sysconfig/init"
-    exec ${shell}
-  '';
+    postInstall = ''
+      echo checking syntax
+      # check both with bash
+      ${pkgs.buildPackages.bash}/bin/sh -n $target
+      # and with ash shell, just in case
+      ${pkgs.buildPackages.busybox}/bin/ash -n $target
+    '';
+  };
 
   initialRamdisk = pkgs.makeInitrd {
-    name = "initrd-micros";
+    name = "initrd-${kernel-name}";
+
     contents = [
       {
         object = bootStage1;
         symlink = "/init";
       }
+      {
+        object = "${modulesClosure}/lib";
+        symlink = "/lib";
+      }
     ];
 
-    compressor =
-      if lib.versionAtLeast config.boot.kernelPackages.kernel.version "5.9"
-      then "zstd"
-      else "gzip";
+    inherit (config.boot.initrd) compressor compressorArgs;
   };
 
   netbootRamdisk = pkgs.makeInitrd {
-    name = "initrd-micros-netboot";
+    name = "initrd-${kernel-name}-netboot";
     prepend = ["${config.system.build.initialRamdisk}/initrd"];
 
     contents = [
@@ -218,10 +236,7 @@
       }
     ];
 
-    compressor =
-      if lib.versionAtLeast config.boot.kernelPackages.kernel.version "5.9"
-      then "zstd"
-      else "gzip";
+    inherit (config.boot.initrd) compressor compressorArgs;
   };
 in {
   options = {
@@ -258,7 +273,35 @@ in {
       };
     };
 
-    boot.initrd.enable = mkEnableOption "initrd" // {default = true;};
+    boot.initrd = {
+      enable = mkEnableOption "initrd" // {default = true;};
+
+      compressor = mkOption {
+        type = with types; either str (functionTo str);
+        default =
+          if lib.versionAtLeast config.boot.kernelPackages.kernel.version "5.9"
+          then "zstd"
+          else "gzip";
+
+        defaultText = literalMD "`zstd` if the kernel supports it (5.9+), `gzip` if not";
+        description = ''
+          The compressor to use on the initrd image. May be any of:
+
+          - The name of one of the predefined compressors, see {file}`pkgs/build-support/kernel/initrd-compressor-meta.nix` for the definitions.
+          - A function which, given the nixpkgs package set, returns the path to a compressor tool, e.g. `pkgs: "''${pkgs.pigz}/bin/pigz"`
+          - (not recommended, because it does not work when cross-compiling) the full path to a compressor tool, e.g. `"''${pkgs.pigz}/bin/pigz"`
+
+          The given program should read data from stdin and write it to stdout compressed.
+        '';
+        example = "xz";
+      };
+
+      compressorArgs = mkOption {
+        default = null;
+        type = types.nullOr (types.listOf types.str);
+        description = "Arguments to pass to the compressor for the initrd image, or null to use the compressor's defaults.";
+      };
+    };
   };
 
   config = {

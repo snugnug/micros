@@ -32,8 +32,6 @@ in {
   config = {
     boot.kernelParams = ["init=${config.system.build.initialRamdisk}/initrd"];
     system.build = {
-      earlyMountScript = "";
-
       # TODO: this makes it so that the build closure depends on qemu no matter what.
       # We should make this optional, or even better, an imported profile.
       runvm = pkgs.writeScript "notos-vm-runner" ''
