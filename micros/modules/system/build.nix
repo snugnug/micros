@@ -34,8 +34,7 @@ in {
     system.build = {
       # TODO: this makes it so that the build closure depends on qemu no matter what.
       # We should make this optional, or even better, an imported profile.
-      runvm = pkgs.writeScript "notos-vm-runner" ''
-        #!${pkgs.stdenv.shell}
+      runvm = pkgs.writeShellScriptBin "notos-vm-runner" ''
         exec ${pkgs.qemu_kvm}/bin/qemu-kvm -name not-os -m 512 \
           -drive index=0,id=drive1,file=${config.system.build.squashfs},readonly,media=cdrom,format=raw,if=virtio \
           -kernel ${config.system.build.kernel}/bzImage \

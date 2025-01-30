@@ -18,6 +18,26 @@
     allowMissing = false;
   };
 
+  # The initrd only has to mount `/` or any FS marked as necessary for
+  # booting (such as the FS containing `/nix/store`, or an FS needed for
+  # mounting `/`, like `/` on a loopback).
+  # Check whenever fileSystem is needed for boot.  NOTE: Make sure
+  # pathsNeededForBoot is closed under the parent relationship, i.e. if /a/b/c
+  # is in the list, put /a and /a/b in as well.
+  pathsNeededForBoot = [
+    "/"
+    "/nix"
+    "/nix/store"
+    "/var"
+    "/var/log"
+    "/var/lib"
+    "/var/lib/nixos"
+    "/etc"
+    "/usr"
+  ];
+  fsNeededForBoot = fs: fs.neededForBoot || lib.elem fs.mountPoint pathsNeededForBoot;
+  fileSystems = lib.filter fsNeededForBoot config.system.build.fileSystems;
+
   # A utility for enumerating the shared-library dependencies of a program
   findLibs = pkgs.buildPackages.writeShellScriptBin "find-libs" ''
     set -euo pipefail
@@ -89,11 +109,6 @@
         copy_bin_and_libs $BIN
       done
 
-      # Copy Runit
-      for BIN in ${pkgs.runit}/bin/*; do
-        copy_bin_and_libs $BIN
-      done
-
       copy_bin_and_libs ${pkgs.dhcpcd}/bin/dhcpcd
 
       # Copy ld manually since it isn't detected correctly
@@ -151,14 +166,21 @@
     replacements = {
       shell = "${extraUtils}/bin/ash";
 
+      # Expects $targetRoot to be set in the stage-1 script.
       mountScript = ''
         ${config.not-os.preMount}
-        if [ $realroot = tmpfs ]; then
-          mount -t tmpfs root /mnt/ -o size=1G || exec ${shell}
+
+        # TODO: this should be handled better
+        realroot=tmpfs
+
+        if [ "$realroot" = tmpfs ]; then
+          mount -t tmpfs root "$targetRoot" -o size=1G
         else
-          mount $realroot /mnt || exec ${shell}
+          mount "$realroot" "$targetRoot"
         fi
-        chmod 755 /mnt/
+
+        chmod 755 $targetRoot
+
         ${config.not-os.postMount}
       '';
 
@@ -179,6 +201,20 @@
           # readonly store
           mount $root /mnt/nix/store/ -t squashfs
         '';
+
+      fsInfo = let
+        f = fs: [
+          fs.mountPoint
+          (
+            if fs.device != null
+            then fs.device
+            else "/dev/disk/by-label/${fs.label}"
+          )
+          fs.fsType
+          (builtins.concatStringsSep "," fs.options)
+        ];
+      in
+        pkgs.writeText "initrd-fsinfo" (lib.concatStringsSep "\n" (lib.concatMap f fileSystems));
 
       setHostId = optionalString (config.networking.hostId != null) ''
         hi="${config.networking.hostId}"

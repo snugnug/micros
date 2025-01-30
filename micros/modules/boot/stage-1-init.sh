@@ -1,50 +1,9 @@
 #! @shell@
 
-targetRoot=/mnt
-
-fail() {
-  if [ -n "$panicOnFail" ]; then exit 1; fi
-
-  # If starting stage 2 failed, allow the user to repair the problem
-  # in an interactive shell.
-  cat <<EOF
-
-An error occurred in stage 1 of the boot process, which must mount the
-root filesystem on \`$targetRoot' and then start stage 2.  Press one
-of the following keys:
-
-EOF
-  if [ -n "$allowShell" ]; then
-    cat <<EOF
-  i) to launch an interactive shell
-  f) to start an interactive shell having pid 1 (needed if you want to
-     start stage 2's init manually)
-EOF
-  fi
-  cat <<EOF
-  r) to reboot immediately
-  *) to ignore the error and continue
-EOF
-
-  read -r -n 1 reply
-
-  if [ -n "$allowShell" -a "$reply" = f ]; then
-    exec setsid @shell@ -c "exec @shell@ < /dev/$console >/dev/$console 2>/dev/$console"
-  elif [ -n "$allowShell" -a "$reply" = i ]; then
-    echo "Starting interactive shell..."
-    setsid @shell@ -c "exec @shell@ < /dev/$console >/dev/$console 2>/dev/$console" || fail
-  elif [ "$reply" = r ]; then
-    echo "Rebooting..."
-    reboot -f
-  else
-    info "Continuing..."
-  fi
-}
-
-trap 'fail' 0
+targetRoot=/mnt-root
 
 echo
-echo "[1;32m<<< NotOS Stage 1 >>>[0m"
+echo "[1;32m<<< NotOS Stage 1 >>>[0m"
 echo
 
 extraUtils="@extraUtils@"
@@ -54,106 +13,16 @@ export PATH=@extraUtils@/bin
 ln -s @extraUtils@/bin /bin
 # hardcoded in util-linux's mount helper search path `/run/wrappers/bin:/run/current-system/sw/bin:/sbin`
 ln -s @extraUtils@/bin /sbin
+mkdir -p $targetRoot
+mkdir -p /proc /sys /dev /etc/udev /tmp /run/ /var/log
+mount -t devtmpfs devtmpfs /dev/
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+
 ln -s @modulesClosure@/lib/modules /lib/modules
-
-# Make several required directories.
-mkdir -p /etc/udev
-touch /etc/fstab             # to shut up mount
-ln -s /proc/mounts /etc/mtab # to shut up mke2fs
-touch /etc/udev/hwdb.bin     # to shut up udev
-touch /etc/initrd-release
-
-# Function for waiting for device(s) to appear.
-waitDevice() {
-  local device="$1"
-  # Split device string using ':' as a delimiter, bcachefs uses
-  # this for multi-device filesystems, i.e. /dev/sda1:/dev/sda2:/dev/sda3
-  local IFS
-
-  # bcachefs is the only known use for this at the moment
-  # Preferably, the 'UUID=' syntax should be enforced, but
-  # this is kept for compatibility reasons
-  if [ "$fsType" = bcachefs ]; then IFS=':'; fi
-
-  # USB storage devices tend to appear with some delay.  It would be
-  # great if we had a way to synchronously wait for them, but
-  # alas...  So just wait for a few seconds for the device to
-  # appear.
-  for dev in $device; do
-    if test ! -e $dev; then
-      echo -n "waiting for device $dev to appear..."
-      try=20
-      while [ $try -gt 0 ]; do
-        sleep 1
-        # also re-try lvm activation now that new block devices might have appeared
-        lvm vgchange -ay
-        # and tell udev to create nodes for the new LVs
-        udevadm trigger --action=add
-        if test -e $dev; then break; fi
-        echo -n "."
-        try=$((try - 1))
-      done
-      echo
-      [ $try -ne 0 ]
-    fi
-  done
-}
-
-# Create the mount point if required.
-makeMountPoint() {
-  local device="$1"
-  local mountPoint="$2"
-  local options="$3"
-
-  local IFS=,
-
-  # If we're bind mounting a file, the mount point should also be a file.
-  if ! [ -d "$device" ]; then
-    for opt in $options; do
-      if [ "$opt" = bind ] || [ "$opt" = rbind ]; then
-        mkdir -p "$(dirname "/mnt-root$mountPoint")"
-        touch "/mnt-root$mountPoint"
-        return
-      fi
-    done
-  fi
-
-  mkdir -m 0755 -p "/mnt-root$mountPoint"
-}
-
-# Mount special file systems.
-specialMount() {
-  local device="$1"
-  local mountPoint="$2"
-  local options="$3"
-  local fsType="$4"
-
-  mkdir -m 0755 -p "$mountPoint"
-  mount -n -t "$fsType" -o "$options" "$device" "$mountPoint"
-}
-source @earlyMountScript@
-
-mkdir -p /etc $targetRoot
-touch /etc/fstab # to shut up mount
-ln -s /proc/mounts /etc/mtab
-
-# Mount devtmpfs if available
-if [ -e /sys/kernel/uevent_helper ]; then
-  mount -t devtmpfs devtmpfs /dev
-fi
-
-# Make several required directories.
-echo "Creating necessary directories"
-mkdir -m 0755 -p $targetRoot/proc $targetRoot/sys $targetRoot/dev $targetRoot/run $targetRoot/tmp
-
-mount --move /proc $targetRoot/proc
-mount --move /sys $targetRoot/sys
-mount --move /dev $targetRoot/dev
-mount --move /run $targetRoot/run
 
 # Log the script output to /dev/kmsg or /run/log/stage-1-init.log.
 mkdir -p /tmp
-mknod -m 666 /dev/null c 1 3 # ensure that /dev/null exists.
 mkfifo /tmp/stage-1-init.log.fifo
 logOutFd=8 && logErrFd=9
 eval "exec $logOutFd>&1 $logErrFd>&2"
@@ -172,7 +41,6 @@ exec >/tmp/stage-1-init.log.fifo 2>&1
 export sysconfig=/init
 for o in $(cat /proc/cmdline); do
   case $o in
-
   systemConfig=*)
     set -- $(
       IFS==
@@ -219,6 +87,11 @@ for o in $(cat /proc/cmdline); do
     root=/root.squashfs
     ;;
 
+  boot.trace | debugtrace)
+    # Show each command.
+    set -x
+    ;;
+
   boot.shell_on_fail)
     allowShell=1
     ;;
@@ -228,21 +101,54 @@ for o in $(cat /proc/cmdline); do
     fail
     ;;
 
+  boot.debug1devices) # stop after loading modules and creating device nodes
+    allowShell=1
+    debug1devices=1
+    ;;
+
+  boot.debug1mounts) # stop after mounting file systems
+    allowShell=1
+    debug1mounts=1
+    ;;
+
   boot.panic_on_fail | stage1panic=1)
     panicOnFail=1
     ;;
+
+  copytoram)
+    copytoram=1
+    ;;
+
+  findiso=*)
+    # if an iso name is supplied, try to find the device where
+    # the iso resides on
+    set -- $(
+      IFS==
+      echo $o
+    )
+    isoPath=$2
+    ;;
+
   esac
 done
 
-# Script to mount root fs
-@mountScript@
+# Mount special file systems.
+specialMount() {
+  local device="$1"
+  local mountPoint="$2"
+  local options="$3"
+  local fsType="$4"
 
-# Script to mount Nix Store
-mkdir -p /mnt/nix/store/
-@storeMountScript@
+  mkdir -m 0755 -p "$mountPoint"
+  mount -n -t "$fsType" -o "$options" "$device" "$mountPoint"
+}
+
+echo "Sourcing early mount script"
+source @earlyMountScript@
 
 # Set hostid before modules are loaded.
-# This is needed by the spl/zfs modules.
+# This is needed by the spl/zfs modules
+echo "Setting host ID"
 @setHostId@
 
 # Load the required kernel modules.
@@ -252,8 +158,46 @@ for i in @kernelModules@; do
   modprobe $i
 done
 
+echo "Reached mount script"
+@mountScript@
+
+mkdir -p $targetRoot/nix/store/
+
+echo "Mounting Nix store"
+@storeMountScript@
+
+# If we have a path to an iso file, find the iso and link it to /dev/root
+if [ -n "$isoPath" ]; then
+  mkdir -p /findiso
+
+  for delay in 5 10; do
+    blkid | while read -r line; do
+      device=$(echo "$line" | sed 's/:.*//')
+      type=$(echo "$line" | sed 's/.*TYPE="\([^"]*\)".*/\1/')
+
+      mount -t "$type" "$device" /findiso
+      if [ -e "/findiso$isoPath" ]; then
+        ln -sf "/findiso$isoPath" /dev/root
+        break 2
+      else
+        umount /findiso
+      fi
+    done
+
+    sleep "$delay"
+  done
+fi
+
+# Try to find and mount the root device.
+echo "Creating \$targetRoot"
+
+mkdir -p "$targetRoot" || echo "Failed to create target root" && exit 1
+
+exec 3<@fsInfo@
+
 # Reset the logging file descriptors.
 # Do this just before pkill, which will kill the tee process.
+echo "Resetting logging file descriptors."
 exec 1>&$logOutFd 2>&$logErrFd
 eval "exec $logOutFd>&- $logErrFd>&-"
 
@@ -271,6 +215,8 @@ for pid in $(pgrep -v -f '^@'); do
   kill -9 "$pid"
 done
 
+if test -n "$debug1mounts"; then fail; fi
+
 # Restore /proc/sys/kernel/modprobe to its original value.
 echo /sbin/modprobe >/proc/sys/kernel/modprobe
 
@@ -287,10 +233,56 @@ if [ ! -e "$targetRoot/$sysconfig" ]; then
   fi
 fi
 
+echo "Creating special filesystems in \$targetRoot"
+mkdir -m 0755 -p $targetRoot/proc $targetRoot/sys $targetRoot/dev $targetRoot/run
+
+mount --move /proc $targetRoot/proc
 mount --move /sys $targetRoot/sys
 mount --move /dev $targetRoot/dev
 mount --move /run $targetRoot/run
 
-exec env -i $(type -P switch_root) "$targetRoot" "$sysconfig"/init
+echo "Stage 1 complete: staging to stage 2"
+exec env -i $(type -P switch_root) "$targetRoot" "$sysconfig" || exec @shell
+
+fail() {
+  if [ -n "$panicOnFail" ]; then exit 1; fi
+
+  # If starting stage 2 failed, allow the user to repair the problem
+  # in an interactive shell.
+  cat <<EOF
+
+An error occurred in stage 1 of the boot process, which must mount the
+root filesystem on \`$targetRoot' and then start stage 2.  Press one
+of the following keys:
+
+EOF
+  if [ -n "$allowShell" ]; then
+    cat <<EOF
+  i) to launch an interactive shell
+  f) to start an interactive shell having pid 1 (needed if you want to
+     start stage 2's init manually)
+EOF
+  fi
+  cat <<EOF
+  r) to reboot immediately
+  *) to ignore the error and continue
+EOF
+
+  read -n 1 reply
+
+  if [ -n "$allowShell" -a "$reply" = f ]; then
+    exec setsid @shell@ -c "exec @shell@ < /dev/$console >/dev/$console 2>/dev/$console"
+  elif [ -n "$allowShell" -a "$reply" = i ]; then
+    echo "Starting interactive shell..."
+    setsid @shell@ -c "exec @shell@ < /dev/$console >/dev/$console 2>/dev/$console" || fail
+  elif [ "$reply" = r ]; then
+    echo "Rebooting..."
+    reboot -f
+  else
+    info "Continuing..."
+  fi
+}
+
+trap 'fail' 0
 
 fail # should never be reached
