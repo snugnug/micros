@@ -2,6 +2,12 @@
 
 targetRoot=/mnt-root
 
+info() {
+  if [[ -n "$verbose" ]]; then
+    echo "$@"
+  fi
+}
+
 echo
 echo "[1;32m<<< NotOS Stage 1 >>>[0m"
 echo
@@ -242,7 +248,7 @@ mount --move /dev $targetRoot/dev
 mount --move /run $targetRoot/run
 
 echo "Stage 1 complete: staging to stage 2"
-exec env -i $(type -P switch_root) "$targetRoot" "$sysconfig" || exec @shell
+exec env -i $(type -P switch_root) "$targetRoot" "$sysconfig"
 
 fail() {
   if [ -n "$panicOnFail" ]; then exit 1; fi
