@@ -100,6 +100,12 @@ with lib; let
         type = nonEmptyStr;
         description = "Type of the file system.";
       };
+      neededForBoot = mkOption {
+        default = "false";
+        example = "true";
+        type = types.bool;
+        description = "Whether to mount filesystem in Stage 1";
+      };
 
       options = mkOption {
         default = ["defaults"];
@@ -185,38 +191,29 @@ with lib; let
       mounts);
 
   makeFstabEntries = let
-    fsToSkipCheck =
-      [
-        "none"
-        "auto"
-        "overlay"
-        "iso9660"
-        "bindfs"
-        "udf"
-        "btrfs"
-        "zfs"
-        "tmpfs"
-        "bcachefs"
-        "nfs"
-        "nfs4"
-        "nilfs2"
-        "vboxsf"
-        "squashfs"
-        "glusterfs"
-        "apfs"
-        "9p"
-        "cifs"
-        "prl_fs"
-        "vmhgfs"
-      ]
-      ++ lib.optionals (!config.boot.initrd.checkJournalingFS) [
-        "ext3"
-        "ext4"
-        "reiserfs"
-        "xfs"
-        "jfs"
-        "f2fs"
-      ];
+    fsToSkipCheck = [
+      "none"
+      "auto"
+      "overlay"
+      "iso9660"
+      "bindfs"
+      "udf"
+      "btrfs"
+      "zfs"
+      "tmpfs"
+      "bcachefs"
+      "nfs"
+      "nfs4"
+      "nilfs2"
+      "vboxsf"
+      "squashfs"
+      "glusterfs"
+      "apfs"
+      "9p"
+      "cifs"
+      "prl_fs"
+      "vmhgfs"
+    ];
     isBindMount = fs: builtins.elem "bind" fs.options;
     skipCheck = fs: fs.noCheck || fs.device == "none" || builtins.elem fs.fsType fsToSkipCheck || isBindMount fs;
   in

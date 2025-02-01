@@ -9,7 +9,7 @@ info() {
 }
 
 echo
-echo "[1;32m<<< NotOS Stage 1 >>>[0m"
+echo "[1;32m<<< MicroOS Stage 1 >>>[0m"
 echo
 
 extraUtils="@extraUtils@"
@@ -19,11 +19,14 @@ export PATH=@extraUtils@/bin
 ln -s @extraUtils@/bin /bin
 # hardcoded in util-linux's mount helper search path `/run/wrappers/bin:/run/current-system/sw/bin:/sbin`
 ln -s @extraUtils@/bin /sbin
+
+# Make important directories needed for booting, and mount dev, sys, and proc.
 mkdir -p $targetRoot
 mkdir -p /proc /sys /dev /etc/udev /tmp /run/ /var/log
-mount -t devtmpfs devtmpfs /dev/
+echo -n >/etc/fstab
 mount -t proc proc /proc
-mount -t sysfs sysfs /sys
+mount -t sysfs none /sys
+mount -t devtmpfs devtmpfs /dev/
 
 ln -s @modulesClosure@/lib/modules /lib/modules
 
@@ -145,7 +148,7 @@ specialMount() {
   local options="$3"
   local fsType="$4"
 
-  mkdir -m 0755 -p "$mountPoint"
+  mkdir -p "$mountPoint"
   mount -n -t "$fsType" -o "$options" "$device" "$mountPoint"
 }
 
@@ -167,10 +170,29 @@ done
 echo "Reached mount script"
 @mountScript@
 
-mkdir -p $targetRoot/nix/store/
+mkdir -p $targetRoot/dev
+mount -o bind /dev $targetRoot/dev
+
+mkdir -p /opt/mdev/helpers
+
+touch /opt/mdev/helpers/storage-device
+
+chmod 0755 /opt/mdev/helpers/storage-device
+
+cat @mdevHelper@ >/opt/mdev/helpers/storage-device
+
+touch /etc/mdev.conf
+
+cat @mdevRules@ >/etc/mdev.conf
+
+mdev -d
 
 echo "Mounting Nix store"
-@storeMountScript@
+
+mkdir -p /mnt/tmp /mnt/run /mnt/var
+mount -t tmpfs -o "mode=1777" none /mnt/tmp
+mount -t tmpfs -o "mode=755" none /mnt/run
+ln -sfn /run /mnt/var/run
 
 # If we have a path to an iso file, find the iso and link it to /dev/root
 if [ -n "$isoPath" ]; then
@@ -193,14 +215,22 @@ if [ -n "$isoPath" ]; then
     sleep "$delay"
   done
 fi
-
 # Try to find and mount the root device.
 echo "Creating \$targetRoot"
-
-mkdir -p "$targetRoot" || echo "Failed to create target root" && exit 1
-
+mkdir -p "$targetRoot" || echo "Failed to create target root"
+blkid
 exec 3<@fsInfo@
 
+while read -u 3 mountPoint; do
+  read -u 3 device
+  read -u 3 fsType
+  read -u 3 options
+  # TODO: Add checks for bind mounts
+  mkdir -p "$targetRoot$mountPoint"
+  mount -t "$fsType" "$device" "$targetRoot$mountPoint"
+done
+
+exec 3>&-
 # Reset the logging file descriptors.
 # Do this just before pkill, which will kill the tee process.
 echo "Resetting logging file descriptors."
@@ -226,29 +256,7 @@ if test -n "$debug1mounts"; then fail; fi
 # Restore /proc/sys/kernel/modprobe to its original value.
 echo /sbin/modprobe >/proc/sys/kernel/modprobe
 
-# Start stage 2. `switch_root' deletes all files in the ramfs on the
-# current root. The path has to be valid in the chroot not outside.
-if [ ! -e "$targetRoot/$sysconfig" ]; then
-  stage2Check=${sysconfig}
-  while [ "$stage2Check" != "${stage2Check%/*}" ] && [ ! -L "$targetRoot/$stage2Check" ]; do
-    stage2Check=${stage2Check%/*}
-  done
-  if [ ! -L "$targetRoot/$stage2Check" ]; then
-    echo "stage 2 init script ($targetRoot/$sysconfig) not found"
-    fail
-  fi
-fi
-
-echo "Creating special filesystems in \$targetRoot"
-mkdir -m 0755 -p $targetRoot/proc $targetRoot/sys $targetRoot/dev $targetRoot/run
-
-mount --move /proc $targetRoot/proc
-mount --move /sys $targetRoot/sys
-mount --move /dev $targetRoot/dev
-mount --move /run $targetRoot/run
-
-echo "Stage 1 complete: staging to stage 2"
-exec env -i $(type -P switch_root) "$targetRoot" "$sysconfig"
+# Defines fail function, giving user a shell in case of emergency.
 
 fail() {
   if [ -n "$panicOnFail" ]; then exit 1; fi
@@ -276,6 +284,7 @@ EOF
 
   read -n 1 reply
 
+  ls /dev
   if [ -n "$allowShell" -a "$reply" = f ]; then
     exec setsid @shell@ -c "exec @shell@ < /dev/$console >/dev/$console 2>/dev/$console"
   elif [ -n "$allowShell" -a "$reply" = i ]; then
@@ -288,6 +297,32 @@ EOF
     info "Continuing..."
   fi
 }
+
+# Check if stage 2 exists
+if [ ! -e "$targetRoot$sysconfig" ]; then
+  stage2Check=${sysconfig}
+  while [ "$stage2Check" != "${stage2Check%/*}" ] && [ ! -L "$targetRoot$stage2Check" ]; do
+    stage2Check=${stage2Check%/*}
+  done
+  if [ ! -L "$targetRoot$stage2Check" ]; then
+    echo "stage 2 init script ($targetRoot$sysconfig) not found"
+    fail
+  fi
+fi
+
+# Prepare mountpoints for stage 2
+echo "Creating special filesystems in \$targetRoot"
+mkdir -m 0755 -p $targetRoot/proc $targetRoot/sys $targetRoot/dev $targetRoot/run
+
+mount --move /proc $targetRoot/proc
+mount --move /sys $targetRoot/sys
+mount --move /dev $targetRoot/dev
+mount --move /run $targetRoot/run
+# Start stage 2. `switch_root' deletes all files in the ramfs on the
+# current root. The path has to be valid in the chroot not outside.
+
+echo "Stage 1 complete: staging to stage 2"
+exec env -i $(type -P switch_root) "$targetRoot" "$sysconfig/init"
 
 trap 'fail' 0
 

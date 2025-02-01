@@ -53,6 +53,16 @@
         ];
       };
 
+      iso = lib.microsSystem {
+        modules = [
+          ./micros/modules/profiles/virtualization/iso-image.nix
+
+          {
+            nixpkgs.hostPlatform = {inherit system;};
+          }
+        ];
+      };
+
       zynq = lib.microsSystem {
         modules = [
           ./micros/modules/profiles/hardware/zynq.nix

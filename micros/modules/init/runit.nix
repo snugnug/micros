@@ -114,7 +114,7 @@ in {
       # We create each stage manually and link them here.
       "runit/1".source = pkgs.writeScript "runit-stage-1" cfg.runit.stage-1;
       "runit/2".source = pkgs.writeScript "runit-stage-2" cfg.runit.stage-2;
-      "runit/3".source = pkgs.writeScript "runit-strage-3" cfg.runit.stage-3;
+      "runit/3".source = pkgs.writeScript "runit-stage-3" cfg.runit.stage-3;
     };
   };
 }
