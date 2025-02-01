@@ -77,7 +77,6 @@
       qemu = lib.microsSystem {
         modules = [
           ./micros/modules/profiles/virtualization/qemu-guest.nix
-          ./micros/modules/profiles/virtualization/qemu-host.nix
 
           {
             nixpkgs.hostPlatform = {inherit system;};
