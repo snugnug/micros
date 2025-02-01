@@ -32,19 +32,6 @@ in {
   config = {
     boot.kernelParams = ["init=${config.system.build.initialRamdisk}/initrd"];
     system.build = {
-      # TODO: this makes it so that the build closure depends on qemu no matter what.
-      # We should make this optional, or even better, an imported profile.
-      runvm = pkgs.writeShellScriptBin "micros-vm-runner" ''
-        exec ${pkgs.qemu_kvm}/bin/qemu-kvm -name micros -m 512 \
-          -drive index=0,id=drive1,file=${config.system.build.squashfs},readonly,media=cdrom,format=raw,if=virtio \
-          -kernel ${config.system.build.kernel}/bzImage \
-          -initrd ${config.system.build.initialRamdisk}/initrd -nographic \
-          -append "console=ttyS0 ${toString config.boot.kernelParams} quiet panic=-1" -no-reboot \
-          -net nic,model=virtio \
-          -net user,net=10.0.2.0/24,host=10.0.2.2,dns=10.0.2.3,hostfwd=tcp::2222-:22 \
-          -device virtio-rng-pci
-      '';
-
       image = pkgs.callPackage (pkgs.path + "/nixos/lib/make-iso9660-image.nix") {
         contents = [
           {
@@ -87,6 +74,7 @@ in {
         isohybridMbrImage = "${pkgs.syslinux}/share/syslinux/isohdpfx.bin";
         syslinux = pkgs.syslinux;
       };
+
       # nix-build -A system.build.toplevel && du -h $(nix-store -qR result) --max=0 -BM|sort -n
       toplevel =
         pkgs.runCommand "micros-toplevel" {
