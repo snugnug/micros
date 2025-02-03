@@ -16,15 +16,15 @@
       };
       runScript = mkOption {
         type = types.str;
-        default = "";
+        default = "#!${pkgs.runtimeShell}";
       };
       finishScript = mkOption {
         type = types.str;
-        default = "";
+        default = "#!${pkgs.runtimeShell}";
       };
       confScript = mkOption {
         type = types.str;
-        default = "";
+        default = "#!${pkgs.runtimeShell}";
       };
     };
     config = mkMerge [
@@ -42,18 +42,27 @@ in {
     environment.etc = mkMerge [
       (lib.mapAttrs' (name: value: {
           name = "service/${name}/run";
-          value = {text = ''${value.runScript}'';};
+          value = {
+            text = ''${value.runScript}'';
+            mode = "0755";
+          };
         })
         config.runitServices)
       (lib.mapAttrs' (name: value: {
           name = "service/${name}/finish";
 
-          value = {text = ''${value.finishScript}'';};
+          value = {
+            text = ''${value.finishScript}'';
+            mode = "0755";
+          };
         })
         config.runitServices)
       (lib.mapAttrs' (name: value: {
           name = "service/${name}/conf";
-          value = {text = ''${value.confScript}'';};
+          value = {
+            text = ''${value.confScript}'';
+            mode = "0755";
+          };
         })
         config.runitServices)
     ];
