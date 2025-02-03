@@ -30,6 +30,7 @@ in {
         type = types.lines;
         default = ''
           #!${pkgs.runtimeShell}
+          PATH=/run/current-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
 
           # If /etc/ssh is missing, create it.
           [ ! -d /etc/ssh ] && mkdir -p /etc/ssh
@@ -75,7 +76,9 @@ in {
           # Watch the /etc/service directory for files
           # used to configure a monitored service.
           mkdir -p /etc/service
-          exec ${pkgs.runit}/bin/runsvdir -P /etc/service
+
+          PATH=/run/current-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
+          exec env - PATH=$PATH ${pkgs.runit}/bin/runsvdir -P /etc/service
         '';
       };
 
@@ -85,15 +88,15 @@ in {
           #!${pkgs.runtimeShell}
 
           echo Waiting for services to stop...
-          sv force-stop /etc/service/*
-          sv exit /etc/service/*
+          ${pkgs.runit}/bin/sv force-stop /etc/service/*
+          ${pkgs.runit}/bin/sv exit /etc/service/*
 
           echo Sending TERM signal to processes...
-          pkill --inverse -s0,1 -TERM
+          ${pkgs.procps}/bin/pkill --inverse -s0,1 -TERM
           sleep 1
 
           echo Sending KILL signal to processes...
-          pkill --inverse -s0,1 -KILL
+          ${pkgs.procps}/bin/pkill --inverse -s0,1 -KILL
 
           echo Unmounting filesystems, disabling swap...
           swapoff -a
@@ -108,7 +111,7 @@ in {
   };
 
   config = {
-    environment.systemPackages = [runit-compat];
+    environment.systemPackages = [runit-compat pkgs.runit];
     environment.etc = {
       # Runit has three stages: booting, running and shutdown in runit/ 1,2 and 3 respectively.
       # We create each stage manually and link them here.

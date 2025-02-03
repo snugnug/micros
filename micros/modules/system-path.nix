@@ -11,7 +11,8 @@ let
   inherit (lib) types;
 
   requiredPackages = map (pkg: lib.setPrio ((pkg.meta.priority or lib.meta.defaultPriority) + 3) pkg) [
-    pkgs.util-linux
+    pkgs.util-linuxMinimal
+    pkgs.busybox
     pkgs.coreutils
     pkgs.iproute2
     pkgs.iputils
