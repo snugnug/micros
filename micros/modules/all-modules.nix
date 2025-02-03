@@ -1,6 +1,4 @@
 [
-  ./config/boot/runit/services.nix
-  ./config/boot/runit/stages.nix
   ./config/users.nix
   ./config/system-path.nix
 
@@ -8,6 +6,8 @@
 
   ./security/pam.nix
 
+  ./system/boot/runit/services.nix
+  ./system/boot/runit/stages.nix
   ./system/boot/containers.nix
   ./system/boot/getty.nix
   ./system/boot/kernel.nix
