@@ -10,4 +10,5 @@
     fsType = "auto";
     neededForBoot = true;
   };
+  services.getty.enable = true;
 }

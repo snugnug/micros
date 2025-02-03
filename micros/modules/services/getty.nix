@@ -22,5 +22,6 @@ in {
         ${pkgs.busybox}/bin/busybox getty -l ${pkgs.shadow}/bin/login 0 /dev/ttyS0
       '';
     };
+    security.pam.enable = true;
   };
 }
