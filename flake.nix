@@ -119,7 +119,7 @@
                   lib,
                   ...
                 }: {
-                  config.nixpkgs.flake.source = self.outPath;
+                  config.nixpkgs.flake.source = nixpkgs.outPath;
                 })
               ];
           }

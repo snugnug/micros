@@ -16,8 +16,11 @@
   ./system/activation.nix
   ./system/build.nix
   ./system/ipxe.nix
+  ./system/name.nix
 
   ./tasks/filesystems.nix
+
+  ./virtualisation/qemu.nix
 
   ./environment.nix
   ./networking.nix

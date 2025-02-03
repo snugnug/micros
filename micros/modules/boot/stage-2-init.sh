@@ -92,15 +92,22 @@ install -m 0755 -d /etc
 if [ ! -h "/etc/nixos" ]; then
   install -m 0755 -d /etc/nixos
 fi
+
 install -m 01777 -d /tmp
 
+# FIXME: in stage-2.nix systemConfig is set to `null`. This is based on NixOS'
+# stage-2 init, which replaces it in top-level.nix. Since we do not (yet) configure
+# something akin to top-level.nix in nixpkgs, running this script will halt everything
+# and kill the init process.
+#
 # Run the script that performs all configuration activation that does
 # not have to be done at boot time.
-#echo "running activation script..."
+echo "running activation script..."
 $systemConfig/activate
 
+
 # Record the boot configuration.
-ln -sfn "$systemConfig" /run/booted-system
+# ln -sfn "$systemConfig" /run/booted-system
 
 # Run any user-specified commands.
 @shell@ @postBootCommands@
