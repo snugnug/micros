@@ -102,8 +102,8 @@ install -m 01777 -d /tmp
 #
 # Run the script that performs all configuration activation that does
 # not have to be done at boot time.
-# echo "running activation script..."
-# $systemConfig/activate
+echo "running activation script..."
+$systemConfig/activate
 
 # Record the boot configuration.
 # ln -sfn "$systemConfig" /run/booted-system

@@ -9,6 +9,7 @@
 
   ./init/runit.nix
   ./services/nix-daemon.nix
+  ./services/getty.nix
   ./services/rngd.nix
   ./services/sshd.nix
 
@@ -28,4 +29,5 @@
   ./nixpkgs-flake.nix
   ./system-path.nix
   ./systemd-compat.nix
+  ./users.nix
 ]
