@@ -35,7 +35,7 @@ in {
   config = {
     environment.etc = {
       bashrc.text = "export PATH=/run/current-system/sw/bin";
-      profile.text = "export PATH=/run/current-system/sw/bin";
+      profile.text = "export PATH=/run/current-system/sw/bin:/etc/profiles/per-user/$USER/bin";
 
       "resolv.conf".text = "nameserver 10.0.2.3";
 
