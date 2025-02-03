@@ -15,12 +15,14 @@ in {
   };
 
   config = mkIf cfg.enable {
-    environment.etc = {
-      "service/getty/run".source = pkgs.writeScript "start-getty" ''
-        #!${pkgs.runtimeShell}
-        echo "Starting getty"
-        ${pkgs.busybox}/bin/busybox getty -l ${pkgs.shadow}/bin/login 0 /dev/ttyS0
-      '';
+    runitServices = {
+      getty = {
+        runScript = ''
+          #!${pkgs.runtimeShell}
+          echo "Starting getty"
+          ${pkgs.busybox}/bin/busybox getty -l ${pkgs.shadow}/bin/login 0 /dev/ttyS0
+        '';
+      };
     };
     security.pam.enable = true;
   };
