@@ -30,5 +30,6 @@
   ./system-path.nix
   ./systemd-compat.nix
   ./users.nix
+  ./services.nix
   ./pam.nix
 ]
