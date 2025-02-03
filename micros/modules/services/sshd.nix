@@ -8,6 +8,9 @@
   inherit (lib) mkIf;
   inherit (lib) types;
 
+  # TODO: this needs to be integrated into the systemd module as `services.sshd.settings`
+  # and generated dynamically. This is neither a good solution, nor a long-term one. We
+  # would like this to be modular alongside hostKeys options.
   sshd_config = pkgs.writeText "sshd_config" ''
     Port 22
     PidFile /run/sshd.pid
@@ -62,15 +65,19 @@ in {
     };
   };
 
-  config = {
+  config = mkIf cfg.enable {
+    runit.services = {
+      sshd = {
+        runScript = ''
+          #!${pkgs.runtimeShell}
+
+          echo "Starting sshd"
+          ${cfg.package}/bin/sshd -f ${sshd_config}
+        '';
+      };
+    };
+
     environment.etc = mkIf cfg.enable {
-      "service/sshd/run".source = pkgs.writeScript "start-sshd" ''
-        #!${pkgs.runtimeShell}
-
-        echo "Starting sshd"
-        ${cfg.package}/bin/sshd -f ${sshd_config}
-      '';
-
       # TODO: this should be a module option. user = {key = ...; rounds = ...; } or
       # something similar
       "ssh/authorized_keys.d/root" = {

@@ -14,26 +14,32 @@
       name = mkOption {
         type = types.str;
       };
+
       uid = mkOption {
         type = with types; nullOr int;
         default = null;
       };
+
       home = mkOption {
         type = types.path;
         default = "/var/empty";
       };
+
       password = mkOption {
         type = types.str;
       };
+
       shell = mkOption {
-        type = types.nullOr (types.either types.shellPackage types.path);
+        type = with types; nullOr (either shellPackage path);
         default = "/run/current-system/sw/bin/bash";
       };
+
       packages = mkOption {
         type = types.listOf types.package;
         default = [];
       };
     };
+
     config = mkMerge [
       {name = mkDefault name;}
     ];
@@ -51,12 +57,14 @@ in {
         uid = 0;
         password = "";
       };
+
       micros = {
         uid = 1000;
         password = "";
       };
     };
-    runitServices = {
+
+    runit.services = {
       user-init = {
         runScript = ''
           #!${pkgs.runtimeShell}
@@ -67,10 +75,12 @@ in {
         '';
       };
     };
+
     environment.etc = mkMerge [
       {
         passwd.text = lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "${name}:${value.password}:${toString value.uid}:${toString value.uid}::${value.home}:${value.shell}") config.users));
       }
+
       (lib.mapAttrs' (_: {
           packages,
           name,

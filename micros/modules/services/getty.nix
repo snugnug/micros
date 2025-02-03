@@ -15,7 +15,8 @@ in {
   };
 
   config = mkIf cfg.enable {
-    runitServices = {
+    security.pam.enable = true;
+    runit.services = {
       getty = {
         runScript = ''
           #!${pkgs.runtimeShell}
@@ -24,6 +25,5 @@ in {
         '';
       };
     };
-    security.pam.enable = true;
   };
 }
