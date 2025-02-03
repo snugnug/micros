@@ -11,22 +11,27 @@
   runit-compat = pkgs.symlinkJoin {
     name = "runit-compat";
     paths = [
+      # Join runit with some additional utility scripts
+      pkgs.runit
+
+      # Poweroff
       (pkgs.writeShellScriptBin "poweroff" ''
         exec runit-init 0
       '')
 
+      # Reboot
       (pkgs.writeShellScriptBin "reboot" ''
         exec runit-init 6
       '')
     ];
   };
 
-  cfg = config.not-os;
+  cfg = config.runit;
 in {
   options = {
-    not-os.runit = {
+    runit = {
       package = mkPackageOption pkgs "runit";
-      stage-1 = mkOption {
+      stage-1.script = mkOption {
         type = types.lines;
         default = ''
           #!${pkgs.runtimeShell}
@@ -35,7 +40,7 @@ in {
           # If /etc/ssh is missing, create it.
           [ ! -d /etc/ssh ] && mkdir -p /etc/ssh
 
-          ${optionalString cfg.simpleStaticIp.enable ''
+          ${optionalString config.not-os.simpleStaticIp.enable ''
             # Assign a static IP to a given interface with a set IP, route and gateway.
             ip addr add ${cfg.simpleStaticIp.address} dev ${cfg.simpleStaticIp.interface}
             ip link set ${cfg.simpleStaticIp.interface} up
@@ -67,7 +72,7 @@ in {
         '';
       };
 
-      stage-2 = mkOption {
+      stage-2.script = mkOption {
         type = types.lines;
         default = ''
           #!${pkgs.runtimeShell}
@@ -82,7 +87,7 @@ in {
         '';
       };
 
-      stage-3 = mkOption {
+      stage-3.script = mkOption {
         type = types.lines;
         default = ''
           #!${pkgs.runtimeShell}
@@ -111,13 +116,13 @@ in {
   };
 
   config = {
-    environment.systemPackages = [runit-compat pkgs.runit];
+    environment.systemPackages = [runit-compat];
     environment.etc = {
       # Runit has three stages: booting, running and shutdown in runit/ 1,2 and 3 respectively.
       # We create each stage manually and link them here.
-      "runit/1".source = pkgs.writeScript "runit-stage-1" cfg.runit.stage-1;
-      "runit/2".source = pkgs.writeScript "runit-stage-2" cfg.runit.stage-2;
-      "runit/3".source = pkgs.writeScript "runit-stage-3" cfg.runit.stage-3;
+      "runit/1".source = pkgs.writeScript "runit-stage-1" cfg.stage-1.script;
+      "runit/2".source = pkgs.writeScript "runit-stage-2" cfg.stage-2.script;
+      "runit/3".source = pkgs.writeScript "runit-stage-3" cfg.stage-3.script;
     };
   };
 }

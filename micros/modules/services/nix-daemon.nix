@@ -16,14 +16,18 @@ in {
   };
 
   config = mkIf cfg.enable {
+    runit.services = {
+      nix-daemon = {
+        runScript = ''
+          #!${pkgs.runtimeShell}
+
+          echo "Starting nix-daemon"
+          ${cfg.package}/bin/nix-daemon
+        '';
+      };
+    };
+
     environment.etc = {
-      "service/nix/run".source = pkgs.writeScript "start-nix" ''
-        #!${pkgs.runtimeShell}
-
-        echo "Starting nix-daemon"
-        ${cfg.package}/bin/nix-daemon
-      '';
-
       profile.text = lib.mkAfter ''
         export NIX_PATH="nixpkgs=/nix/var/nix/profiles/per-user/root/channels/nixos:nixos-config=/etc/nixos/configuration.nix:/nix/var/nix/profiles/per-user/root/channels"
         export CURL_CA_BUNDLE = "/etc/ssl/certs/ca-certificates.crt";

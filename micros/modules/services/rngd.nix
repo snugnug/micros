@@ -16,12 +16,16 @@ in {
   };
 
   config = mkIf cfg.enable {
-    environment.etc."service/rngd/run".source = pkgs.writeScript "start-rngd" ''
-      #!${pkgs.runtimeShell}
-      export PATH=$PATH:${lib.makeBinPath cfg.package}
+    runit.services = {
+      nix-daemon = {
+        runScript = ''
+          #!${pkgs.runtimeShell}
+          export PATH=$PATH:${lib.makeBinPath cfg.package}
 
-      echo "Starting rngd"
-      exec rngd -r /dev/hwrng
-    '';
+          echo "Starting rngd"
+          exec rngd -r /dev/hwrng
+        '';
+      };
+    };
   };
 }
