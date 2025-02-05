@@ -16,6 +16,7 @@
 
     forSupportedSystems = lib.genAttrs ["x86_64-linux" "aarch64-linux" "armv7l-linux"];
   in {
+    hydraJobs = self.packages;
     packages = forSupportedSystems (system: {
       rpi = lib.microsSystem {
         modules = [
