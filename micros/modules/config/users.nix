@@ -28,9 +28,10 @@
         default = config.uid;
         description = "Account group ID";
       };
+
       home = mkOption {
         type = types.path;
-        default = "/var/empty";
+        default = "/home/${name}";
         description = "Account home directory";
       };
 
@@ -75,7 +76,6 @@ in {
       micros = {
         uid = 1000;
         password = "";
-        home = "/home/micros";
       };
     };
 

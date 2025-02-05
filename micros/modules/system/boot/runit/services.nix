@@ -36,27 +36,27 @@
       # if any, and describe the process of execution. For example, can any one of
       # those options be omitted? Should be documented.
       runScript = mkOption {
-        type = types.str;
-        default = "#!${pkgs.runtimeShell}";
+        type = types.nullOr types.str;
+        default = null;
         description = ''
-          Script ran on service startup. Creates the /etc/service/<name>/run file.
+          Script ran on service startup. Creates the {file}`/etc/service/<name>/run` file.
           Services are ran constantly by default. Use `sv pause <name>` in the run
           script to make the script act as a one-shot.
         '';
       };
 
       finishScript = mkOption {
-        type = types.str;
-        default = "#!${pkgs.runtimeShell}";
+        type = types.nullOr types.str;
+        default = null;
         description = ''
-          Script ran on service shutdown. Creates the /etc/service/<name>/finish file.
+          Script ran on service shutdown. Creates the {file}`/etc/service/<name>/finish` file.
           Can be undefined.
         '';
       };
 
       confScript = mkOption {
-        type = types.str;
-        default = "#!${pkgs.runtimeShell}";
+        type = types.nullOr types.str;
+        default = null;
         description = ''
           Script which can be sourced by the run script to define variables.
           Not used by default, and can be undefined.
@@ -81,7 +81,7 @@ in {
       (mapAttrs' (name: value: {
           inherit (value) enable;
           name = "service/${name}/run";
-          value = {
+          value = mkIf (value.runScript != null) {
             text = ''${value.runScript}'';
             mode = "0755";
           };
@@ -92,7 +92,7 @@ in {
           inherit (value) enable;
           name = "service/${name}/finish";
 
-          value = {
+          value = mkIf (value.finishScript != null) {
             text = ''${value.finishScript}'';
             mode = "0755";
           };
@@ -102,7 +102,7 @@ in {
       (mapAttrs' (name: value: {
           inherit (value) enable;
           name = "service/${name}/conf";
-          value = {
+          value = mkIf (value.confScript != null) {
             text = ''${value.confScript}'';
             mode = "0755";
           };
