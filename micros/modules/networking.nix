@@ -121,7 +121,7 @@ in {
             };
 
             wpaConf = mkOption {
-              type = types.str;
+              type = types.path;
               default = "";
               description = "Path to the wpa_supplicant configuration file (required for wifi).";
             };
@@ -129,7 +129,7 @@ in {
             staticIP = mkOption {
               type = types.str;
               default = "";
-              description = "Static IP address in CIDR notation (e.g. 192.168.1.2/24) for static configuration.";
+              description = "Static IP address in CIDR notation (e.g., 192.168.1.2/24) for static configuration.";
             };
           };
         });
