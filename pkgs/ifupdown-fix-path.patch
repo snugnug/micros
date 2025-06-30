@@ -1,0 +1,104 @@
+diff --git a/executor-scripts/linux/dhcp b/executor-scripts/linux/dhcp
+index aff637b..feb6673 100755
+--- a/executor-scripts/linux/dhcp
++++ b/executor-scripts/linux/dhcp
+@@ -21,13 +21,13 @@ start() {
+ 		[ -n "$IF_DHCP_LEASETIME" ] && optargs="$optargs -l $IF_DHCP_LEASETIME"
+ 		[ -n "$IF_DHCP_CONFIG" ] && optargs="$optargs -f $IF_DHCP_CONFIG"
+ 		[ -n "$IF_DHCP_SCRIPT" ] && optargs="$optargs -c $IF_DHCP_SCRIPT"
+-		${MOCK} /sbin/dhcpcd $optargs $IFACE
++		${MOCK} dhcpcd $optargs $IFACE
+ 		;;
+ 	dhclient)
+ 		optargs=$(eval echo $IF_DHCP_OPTS)
+ 		[ -n "$IF_DHCP_CONFIG" ] && optargs="$optargs -cf $IF_DHCP_CONFIG"
+ 		[ -n "$IF_DHCP_SCRIPT" ] && optargs="$optargs -sf $IF_DHCP_SCRIPT"
+-		${MOCK} /usr/sbin/dhclient -pf /var/run/dhclient.$IFACE.pid $optargs $IFACE
++		${MOCK} dhclient -pf /var/run/dhclient.$IFACE.pid $optargs $IFACE
+ 		;;
+ 	udhcpc)
+ 		optargs=$(eval echo $IF_UDHCPC_OPTS $IF_DHCP_OPTS)
+@@ -36,7 +36,7 @@ start() {
+ 		[ -n "$IF_DHCP_CLIENT_ID" ] && optargs="$optargs -x 0x3d:${IF_DHCP_CLIENT_ID}"
+ 		[ -n "$IF_DHCP_LEASETIME" ] && optargs="$optargs -x lease:${IF_DHCP_LEASETIME}"
+ 		[ -n "$IF_DHCP_SCRIPT" ] && optargs="$optargs -s $IF_DHCP_SCRIPT"
+-		${MOCK} /sbin/udhcpc -b -R -p /var/run/udhcpc.$IFACE.pid -i $IFACE $optargs
++		${MOCK} udhcpc -b -R -p /var/run/udhcpc.$IFACE.pid -i $IFACE $optargs
+ 		;;
+ 	*)
+ 		;;
+diff --git a/executor-scripts/linux/vrf b/executor-scripts/linux/vrf
+index ac3668a..3803996 100755
+--- a/executor-scripts/linux/vrf
++++ b/executor-scripts/linux/vrf
+@@ -11,19 +11,19 @@ kernel_version_48() {
+ }
+ 
+ handle_init() {
+-	${MOCK} /sbin/ip link $1 $IFACE type vrf table $IF_VRF_TABLE
++	${MOCK} ip link $1 $IFACE type vrf table $IF_VRF_TABLE
+ 	if kernel_version_48; then
+-		${MOCK} /sbin/ip rule $1 iif $IFACE table $IF_VRF_TABLE
+-		${MOCK} /sbin/ip rule $1 oif $IFACE table $IF_VRF_TABLE
++		${MOCK} ip rule $1 iif $IFACE table $IF_VRF_TABLE
++		${MOCK} ip rule $1 oif $IFACE table $IF_VRF_TABLE
+ 	fi
+ }
+ 
+ handle_member() {
+-	${MOCK} /sbin/ip link set $IFACE master $IF_VRF_MEMBER
++	${MOCK} ip link set $IFACE master $IF_VRF_MEMBER
+ }
+ 
+ handle_member_off() {
+-	${MOCK} /sbin/ip link set $IFACE nomaster
++	${MOCK} ip link set $IFACE nomaster
+ }
+ 
+ [ -n "$VERBOSE" ] && set -x
+diff --git a/executor-scripts/linux/wifi b/executor-scripts/linux/wifi
+index 398c2ac..8cce340 100755
+--- a/executor-scripts/linux/wifi
++++ b/executor-scripts/linux/wifi
+@@ -46,7 +46,7 @@ generate_config() {
+ 	[ -z "$IF_WIFI_SSID" ] && die "wifi-ssid not set"
+ 	[ -z "$IF_WIFI_PSK" ] && die "wifi-psk not set"
+ 
+-	/sbin/wpa_passphrase "$IF_WIFI_SSID" "$IF_WIFI_PSK" >$WIFI_CONFIG_PATH
++	wpa_passphrase "$IF_WIFI_SSID" "$IF_WIFI_PSK" >$WIFI_CONFIG_PATH
+ 
+ 	[ ! -e "$WIFI_CONFIG_PATH" ] && die "failed to write temporary config: $WIFI_CONFIG_PATH"
+ }
+@@ -66,9 +66,9 @@ start() {
+ 		# If there is no config file located at $WIFI_CONFIG_PATH, generate one.
+ 		[ ! -e "$WIFI_CONFIG_PATH" ] && generate_config
+ 
+-		/sbin/wpa_supplicant $WPA_SUPPLICANT_OPTS
++		wpa_supplicant $WPA_SUPPLICANT_OPTS
+ 	else
+-		/usr/sbin/iwconfig $IFACE essid -- "$IF_WIFI_SSID" ap any
++		iwconfig $IFACE essid -- "$IF_WIFI_SSID" ap any
+ 	fi
+ }
+ 
+@@ -102,7 +102,7 @@ stop() {
+ 	if use_supplicant; then
+ 		stop_wpa_supplicant
+ 	else
+-		/usr/sbin/iwconfig $IFACE essid any
++		iwconfig $IFACE essid any
+ 	fi
+ }
+ 
+diff --git a/libifupdown/lifecycle.c b/libifupdown/lifecycle.c
+index 8bc9526..998c8ee 100644
+--- a/libifupdown/lifecycle.c
++++ b/libifupdown/lifecycle.c
+@@ -166,7 +166,7 @@ build_environment(char **envp[], const struct lif_execute_opts *opts, const stru
+ 
+ 	/* Use sane defaults for PATH */
+ 	if (geteuid() == 0)
+-		lif_environment_push(envp, "PATH", _PATH_STDPATH);
++		lif_environment_push(envp, "PATH", getenv("PATH"));
+ 	else
+ 		lif_environment_push(envp, "PATH", _PATH_DEFPATH);

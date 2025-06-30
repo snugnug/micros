@@ -32,6 +32,7 @@
     "/var/log"
     "/var/lib"
     "/var/lib/nixos"
+    "/var/run"
     "/etc"
     "/usr"
   ];

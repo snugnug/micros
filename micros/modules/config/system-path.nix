@@ -18,6 +18,8 @@ let
     pkgs.iputils
     pkgs.procps
     pkgs.bashInteractive
+    pkgs.dhcpcd
+    (pkgs.callPackage ../../../pkgs/ifupdown-ng.nix {})
   ];
 in {
   options = {

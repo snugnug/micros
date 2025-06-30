@@ -318,6 +318,7 @@ mount --move /proc $targetRoot/proc
 mount --move /sys $targetRoot/sys
 mount --move /dev $targetRoot/dev
 mount --move /run $targetRoot/run
+
 # Start stage 2. `switch_root' deletes all files in the ramfs on the
 # current root. The path has to be valid in the chroot not outside.
 

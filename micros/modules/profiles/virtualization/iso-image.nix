@@ -107,7 +107,7 @@
     "virtio_scsi"
     "virtio_balloon"
     "virtio_console"
-
+    "af_packet"
     # VMware support.
     "mptspi"
     "vmxnet3"
@@ -129,4 +129,9 @@
     neededForBoot = true;
   };
   services.getty.enable = true;
+  networking.interfaces = [
+    {
+      name = "eth0";
+    }
+  ];
 }
