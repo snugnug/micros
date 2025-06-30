@@ -88,6 +88,7 @@
 
     legacyPackages = forSupportedSystems (system: {
       linux-rpi2 = nixpkgs.legacyPackages.${system}.callPackage ./pkgs/linux-rpi.nix {};
+      ifupdown-ng = nixpkgs.legacyPackages.${system}.callPackage ./pkgs/ifupdown-ng.nix {};
     });
 
     # Custom library to provide additional utilities for 3rd party consumption.

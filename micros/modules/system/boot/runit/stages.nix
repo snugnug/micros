@@ -40,24 +40,12 @@ in {
           # If /etc/ssh is missing, create it.
           [ ! -d /etc/ssh ] && mkdir -p /etc/ssh
 
-          ${optionalString config.not-os.simpleStaticIp.enable ''
-            # Assign a static IP to a given interface with a set IP, route and gateway.
-            ip addr add ${cfg.simpleStaticIp.address} dev ${cfg.simpleStaticIp.interface}
-            ip link set ${cfg.simpleStaticIp.interface} up
-            ip route add ${cfg.simpleStaticIp.route} dev ${cfg.simpleStaticIp.interface}
-            ip route add default via ${cfg.simpleStaticIp.gateway} dev ${cfg.simpleStaticIp.interface}
-          ''}
-
           # Link /bin/sh from environment.binsh, defaults to ash from buxybox.
           mkdir /bin
           ln -s ${config.environment.binsh} /bin/sh
 
-          ${optionalString config.networking.dhcp.enable ''
-            # Network discovery
-            mkdir -p /var/db/dhcpcd /var/run/dhcpcd
-            touch /etc/dhcpcd.conf
-            ${pkgs.dhcpcd}/sbin/dhcpcd --oneshot
-          ''}
+          # Bring network interfaces up
+          ifup -v -a -E ${(pkgs.callPackage ../../../../../pkgs/ifupdown-ng.nix {})}/usr/libexec/ifupdown-ng
 
           ${optionalString (config.networking.timeServers != []) ''
             # Configure timeservers

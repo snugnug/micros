@@ -30,5 +30,8 @@ in {
     chmod 0555 /var/empty
     chown root:root /var/empty
     ${pkgs.e2fsprogs}/bin/chattr -f +i /var/empty || true
+    # Link /var/run to tmpfs
+    ln -sfn /run /var/run
+    hostname -F /etc/hostname
   '';
 }
