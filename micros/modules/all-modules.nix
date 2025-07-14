@@ -27,7 +27,9 @@
   ./virtualisation/qemu.nix
 
   ./environment.nix
-  ./networking.nix
+  ./networking/networking.nix
+  ./networking/firewall.nix
+  ./networking/nftables.nix
   ./nix.nix
   ./nixpkgs.nix
   ./nixpkgs-flake.nix
