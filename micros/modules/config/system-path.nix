@@ -18,6 +18,7 @@ let
     pkgs.iputils
     pkgs.procps
     pkgs.bashInteractive
+    pkgs.kmod
     pkgs.dhcpcd
     (pkgs.callPackage ../../../pkgs/ifupdown-ng.nix {})
   ];
