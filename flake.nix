@@ -1,16 +1,11 @@
 {
   inputs = {
     nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-    raspi-firmware = {
-      url = "github:raspberrypi/firmware";
-      flake = false;
-    };
   };
 
   outputs = {
     self,
     nixpkgs,
-    raspi-firmware,
   }: let
     inherit (self) lib;
 
@@ -18,42 +13,6 @@
   in {
     hydraJobs = self.packages;
     packages = forSupportedSystems (system: {
-      rpi = lib.microsSystem {
-        modules = [
-          ./micros/modules/profiles/hardware/rpi.nix
-          ./micros/modules/profiles/hardware/arm32-cross.nix
-
-          {
-            not-os.rpi1 = true;
-            not-os.rpi2 = true;
-
-            system.build.rpi-firmware = raspi-firmware;
-
-            nixpkgs.hostPlatform = {inherit system;};
-            nixpkgs.overlays = [
-              (final: prev: {
-                openssh = prev.openssh.override {
-                  withFIDO = false;
-                  withKerberos = false;
-                };
-
-                util-linux = prev.util-linux.override {
-                  pamSupport = false;
-                  capabilitiesSupport = false;
-                  ncursesSupport = false;
-                  systemdSupport = false;
-                  nlsSupport = false;
-                  translateManpages = false;
-                };
-
-                utillinuxCurses = prev.util-linux;
-                utillinuxMinimal = prev.util-linux;
-              })
-            ];
-          }
-        ];
-      };
-
       iso = lib.microsSystem {
         modules = [
           ./micros/modules/profiles/virtualization/iso-image.nix
@@ -87,7 +46,6 @@
     });
 
     legacyPackages = forSupportedSystems (system: {
-      linux-rpi2 = nixpkgs.legacyPackages.${system}.callPackage ./pkgs/linux-rpi.nix {};
       ifupdown-ng = nixpkgs.legacyPackages.${system}.callPackage ./pkgs/ifupdown-ng.nix {};
     });
 

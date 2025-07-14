@@ -15,7 +15,6 @@
   ./system/boot/stage-2.nix
   ./system/activation.nix
   ./system/build.nix
-  ./system/ipxe.nix
   ./system/name.nix
 
   ./services/nix-daemon.nix

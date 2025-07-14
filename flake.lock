@@ -2,11 +2,11 @@
   "nodes": {
     "nixpkgs": {
       "locked": {
-        "lastModified": 1737885589,
-        "narHash": "sha256-Zf0hSrtzaM1DEz8//+Xs51k/wdSajticVrATqDrfQjg=",
+        "lastModified": 1751011381,
+        "narHash": "sha256-krGXKxvkBhnrSC/kGBmg5MyupUUT5R6IBCLEzx9jhMM=",
         "owner": "nixos",
         "repo": "nixpkgs",
-        "rev": "852ff1d9e153d8875a83602e03fdef8a63f0ecf8",
+        "rev": "30e2e2857ba47844aa71991daa6ed1fc678bcbb7",
         "type": "github"
       },
       "original": {
@@ -16,26 +16,9 @@
         "type": "github"
       }
     },
-    "raspi-firmware": {
-      "flake": false,
-      "locked": {
-        "lastModified": 1737979130,
-        "narHash": "sha256-gdZt9xS3X1Prh+TU0DLy6treFoJjiUUUiZ3IoDbopzI=",
-        "owner": "raspberrypi",
-        "repo": "firmware",
-        "rev": "e076fda5805ae1f0a04ff7ed098a3a780f6d8c2d",
-        "type": "github"
-      },
-      "original": {
-        "owner": "raspberrypi",
-        "repo": "firmware",
-        "type": "github"
-      }
-    },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs",
-        "raspi-firmware": "raspi-firmware"
+        "nixpkgs": "nixpkgs"
       }
     }
   },

@@ -15,7 +15,7 @@
 
         path = lib.makeBinPath [
           pkgs.coreutils
-          pkgs.util-linux
+          pkgs.util-linuxMinimal
         ];
 
         # The Runit executable to be run at the end of the script.
