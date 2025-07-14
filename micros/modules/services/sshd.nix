@@ -70,13 +70,30 @@ in {
       sshd = {
         runScript = ''
           #!${pkgs.runtimeShell}
+          echo "Generating Host Keys"
+          ${lib.strings.concatLines (
+            lib.lists.forEach config.services.sshd.hostKeys (value: ''
+              if [ ! -f ${value.path} ];
+              then
+                ${cfg.package}/bin/ssh-keygen -f ${value.path} -t ${value.type} ${
+                if value ? value.bits
+                then "-b ${builtins.toString value.bits}"
+                else ""
+              }
+              fi
+            '')
+          )}
+
 
           echo "Starting sshd"
-          ${cfg.package}/bin/sshd -f ${sshd_config}
+          ${cfg.package}/bin/sshd -D -f ${sshd_config}
         '';
       };
     };
-
+    users.sshd = {
+      shell = "/bin/false";
+      uid = 25600;
+    };
     environment.etc = mkIf cfg.enable {
       # TODO: this should be a module option. user = {key = ...; rounds = ...; } or
       # something similar
