@@ -181,7 +181,9 @@ in {
         hosts:     files dns
         networks:  files dns
       '';
+      "hosts".text = ''
 
+      '';
       "network/interfaces".text = ''
         auto lo
         iface lo inet loopback

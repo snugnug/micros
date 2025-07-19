@@ -112,6 +112,16 @@
     "mptspi"
     "vmxnet3"
     "vsock"
+
+    "nf_tables"
+    "nft_fib_ipv4"
+    "nft_fib_ipv6"
+    "nft_log"
+    "nft_ct"
+    "nft_compat"
+    "nft_fib"
+    "nft_chain_nat"
+    "nft_fib_inet"
   ];
   fileSystems."/" = {
     device = "none";
@@ -134,4 +144,8 @@
       name = "eth0";
     }
   ];
+  networking.firewall.allowedTCPPorts = [22];
+  networking.firewall.enable = true;
+  networking.nftables.enable = true;
+  services.sshd.enable = true;
 }
