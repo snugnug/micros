@@ -167,7 +167,7 @@
 
     replacements = {
       shell = "${extraUtils}/bin/ash";
-
+      modprobe = "${pkgs.kmod}/bin/modprobe";
       # Expects $targetRoot to be set in the stage-1 script.
       mountScript = ''
         ${config.not-os.preMount}

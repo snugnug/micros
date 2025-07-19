@@ -254,7 +254,7 @@ done
 if test -n "$debug1mounts"; then fail; fi
 
 # Restore /proc/sys/kernel/modprobe to its original value.
-echo /sbin/modprobe >/proc/sys/kernel/modprobe
+echo @modprobe@ >/proc/sys/kernel/modprobe
 
 # Defines fail function, giving user a shell in case of emergency.
 
