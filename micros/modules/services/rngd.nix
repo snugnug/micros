@@ -17,7 +17,7 @@ in {
 
   config = mkIf cfg.enable {
     runit.services = {
-      nix-daemon = {
+      rngd = {
         runScript = ''
           #!${pkgs.runtimeShell}
           export PATH=$PATH:${lib.makeBinPath cfg.package}
