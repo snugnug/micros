@@ -22,6 +22,8 @@ in {
     # Various log/runtime directories.
     mkdir -p /var/tmp
     chmod 1777 /var/tmp
+    mkdir -p /var/lib
+    chmod 1777 /var/lib
     # Empty, immutable home directory of many system accounts.
     mkdir -p /var/empty
     # Make sure it's really empty
