@@ -6,6 +6,7 @@
 }: let
   inherit (lib) mkOption;
   inherit (lib) types;
+  inherit (config.boot.kernelPackages) kernel;
 in {
   options = {
     system = {
@@ -305,6 +306,7 @@ in {
           cp ${config.system.build.bootStage2} $out/init
           substituteInPlace $out/init --subst-var-by systemConfig $out
           ln -s ${config.system.path} $out/sw
+          ln -s ${kernel} $out/kernel-modules
           echo "$activationScript" > $out/activate
           substituteInPlace $out/activate --subst-var out
           chmod u+x $out/activate
