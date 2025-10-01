@@ -1,7 +1,5 @@
 {
-  inputs = {
-    nixpkgs.url = "github:nixos/nixpkgs/nixos-unstable";
-  };
+  inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
 
   outputs = {
     self,
@@ -10,81 +8,51 @@
     inherit (self) lib;
 
     forSupportedSystems = lib.genAttrs ["x86_64-linux" "aarch64-linux" "armv7l-linux"];
+    pkgsFor = system: nixpkgs.legacyPackages.${system};
   in {
-    hydraJobs = self.packages;
+    # FIXME: syslinux is not supported on aarch64-linux, and this breaks 'nix flake show'
+    # We currently don't have Hydra set up, so it's safe to comment this out for now.
+    # We'll add this back if we can fix/replace syslinux, or if we choose to filter any
+    # specific systems.
+    # hydraJobs = self.packages;
+
     packages = forSupportedSystems (system: {
-      iso = lib.microsSystem {
-        modules = [
-          ./micros/modules/profiles/virtualization/iso-image.nix
+      iso =
+        (lib.microsSystem {
+          modules = [
+            ./micros/modules/profiles/virtualization/iso-image.nix
 
-          {
-            nixpkgs.hostPlatform = {inherit system;};
-          }
-        ];
-      };
+            {
+              nixpkgs.hostPlatform = {inherit system;};
+            }
+          ];
+        }).config.system.build.image;
 
-      zynq = lib.microsSystem {
-        modules = [
-          ./micros/modules/profiles/hardware/zynq.nix
-          ./micros/modules/profiles/hardware/arm32-cross.nix
+      qemu =
+        (lib.microsSystem {
+          modules = [
+            ./micros/modules/profiles/virtualization/qemu-guest.nix
 
-          {
-            nixpkgs.hostPlatform = {inherit system;};
-          }
-        ];
-      };
-
-      qemu = lib.microsSystem {
-        modules = [
-          ./micros/modules/profiles/virtualization/qemu-guest.nix
-
-          {
-            nixpkgs.hostPlatform = {inherit system;};
-          }
-        ];
-      };
+            {
+              nixpkgs.hostPlatform = {inherit system;};
+            }
+          ];
+        }).config.system.build.runvm;
     });
 
-    legacyPackages = forSupportedSystems (system: {
-      ifupdown-ng = nixpkgs.legacyPackages.${system}.callPackage ./pkgs/ifupdown-ng.nix {};
+    legacyPackages = forSupportedSystems (system: let
+      pkgs = pkgsFor.${system};
+    in {
+      ifupdown-ng = pkgs.callPackage ./pkgs/ifupdown-ng.nix {};
     });
 
     # Custom library to provide additional utilities for 3rd party consumption.
     # Primarily designed to expose `microsSystem` as, e.g., inputs.micros.lib.microsSystem
     # for when you are building non-supported platforms on your own accord.
-    # TODO: extend nixpkgs.lib here
-    lib = nixpkgs.lib.extend (_: _: {
-      microsSystem = args:
-        import ./micros/lib/eval-config.nix (
-          {
-            inherit nixpkgs;
+    lib = import ./lib {
+      inherit nixpkgs;
 
-            # Allow system to be set modularly in nixpkgs.system.
-            # We set it to null, to remove the "legacy" entrypoint's
-            # non-hermetic default.
-            system = null;
-
-            modules =
-              args.modules
-              ++ [
-                # This module is injected here since it exposes the nixpkgs self-path in as
-                # constrained of contexts as possible to avoid more things depending on it and
-                # introducing unnecessary potential fragility to changes in flakes itself.
-                #
-                # See: failed attempt to make pkgs.path not copy when using flakes:
-                # https://github.com/NixOS/nixpkgs/pull/153594#issuecomment-1023287913
-                ({
-                  config,
-                  pkgs,
-                  lib,
-                  ...
-                }: {
-                  config.nixpkgs.flake.source = nixpkgs.outPath;
-                })
-              ];
-          }
-          // builtins.removeAttrs args ["modules"]
-        );
-    });
+      micros-lib = ./micros/lib/eval-config.nix;
+    };
   };
 }
