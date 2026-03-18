@@ -1,10 +1,10 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-
   outputs = {
     self,
     nixpkgs,
-  }: let
+    ...
+  } @ inputs: let
     inherit (self) lib;
 
     forSupportedSystems = lib.genAttrs ["x86_64-linux" "aarch64-linux" "armv7l-linux"];
@@ -19,6 +19,7 @@
     packages = forSupportedSystems (system: {
       iso =
         (lib.microsSystem {
+          specialArgs = {inherit inputs lib;};
           modules = [
             ./micros/modules/profiles/virtualization/iso-image.nix
 
@@ -30,6 +31,7 @@
 
       qemu =
         (lib.microsSystem {
+          specialArgs = {inherit inputs lib;};
           modules = [
             ./micros/modules/profiles/virtualization/qemu-guest.nix
 
@@ -38,6 +40,15 @@
             }
           ];
         }).config.system.build.runvm;
+      lxc = lib.microsSystem {
+        specialArgs = {inherit inputs lib;};
+        modules = [
+          ./micros/modules/profiles/virtualization/lxc-profile.nix
+          {
+            nixpkgs.hostPlatform = {inherit system;};
+          }
+        ];
+      };
     });
 
     legacyPackages = forSupportedSystems (system: let
