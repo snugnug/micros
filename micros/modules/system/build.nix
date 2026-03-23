@@ -300,20 +300,25 @@ in {
       toplevel =
         pkgs.runCommand "micros-toplevel" {
           activationScript = config.system.activationScripts.script;
-        } ''
+        }
+        ''
           mkdir $out
 
           cp ${config.system.build.bootStage2} $out/init
           substituteInPlace $out/init --subst-var-by systemConfig $out
           ln -s ${config.system.path} $out/sw
-          ln -s ${kernel} $out/kernel-modules
-          echo "$activationScript" > $out/activate
+
+          ${
+            if !config.boot.isContainer
+            then "ln -s ${kernel} $out/kernel-modules"
+            else ""
+          }
+          echo $activationScript > $out/activate
           substituteInPlace $out/activate --subst-var out
           chmod u+x $out/activate
 
           unset activationScript
         '';
-
       squashfs = pkgs.callPackage (pkgs.path + "/nixos/lib/make-squashfs.nix") {
         storeContents = [config.system.build.toplevel];
       };

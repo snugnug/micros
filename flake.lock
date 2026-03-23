@@ -16,9 +16,44 @@
         "type": "github"
       }
     },
+    "nixpkgs_2": {
+      "locked": {
+        "lastModified": 1773821835,
+        "narHash": "sha256-TJ3lSQtW0E2JrznGVm8hOQGVpXjJyXY2guAxku2O9A4=",
+        "owner": "nixos",
+        "repo": "nixpkgs",
+        "rev": "b40629efe5d6ec48dd1efba650c797ddbd39ace0",
+        "type": "github"
+      },
+      "original": {
+        "owner": "nixos",
+        "ref": "nixos-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "oci-tool": {
+      "inputs": {
+        "nixpkgs": "nixpkgs_2"
+      },
+      "locked": {
+        "lastModified": 1774303877,
+        "narHash": "sha256-CeE1/LqIY8hQwnDLsV/q5LHy4R4TW6HFlTIelZZSZvI=",
+        "owner": "damitusthyyeetus123",
+        "repo": "oci-tool",
+        "rev": "42cd02e5b87810b427a154045ab4a41ccbf12414",
+        "type": "github"
+      },
+      "original": {
+        "owner": "damitusthyyeetus123",
+        "repo": "oci-tool",
+        "type": "github"
+      }
+    },
     "root": {
       "inputs": {
-        "nixpkgs": "nixpkgs"
+        "nixpkgs": "nixpkgs",
+        "oci-tool": "oci-tool"
       }
     }
   },

@@ -29,73 +29,50 @@
           buildCommand = ''
             mkdir -p $out
             mkdir -p $out/nix/store
+            mkdir -p $out/run/booted-system
+
+            cd $out/run/booted-system
+            cp ${closureInfo}/registration nix-path-registration
+            cp -a ${toplevel}/* .
 
             cd $out
-            cp -a ${toplevel}/* .
             for i in $(< ${closureInfo}/store-paths); do
               cp -a "$i" "''${i:1}"
             done
-            cp ${closureInfo}/registration nix-path-registration
           '';
         };
       buildOCIImage = {
         rootfs,
+        closure,
         cmd ? ["/bin/sh"],
         imageName ? "myimage",
         arch ? "amd64",
       }:
         pkgs.stdenvNoCC.mkDerivation {
           name = "${imageName}-oci";
-          buildInputs = [pkgs.gnutar pkgs.coreutils];
+          buildInputs = [pkgs.gnutar pkgs.coreutils inputs.oci-tool.legacyPackages.x86_64-linux.default];
           buildCommand = ''
-            mkdir -p $out/blobs/sha256
-
-            # Tar the rootfs. Feathers come later.
-            tar --sort=name --numeric-owner --owner=0 --group=0 --mtime='UTC 2020-01-01' \
-              -C ${rootfs} -cf layer.tar .
-            LAYER_SHA=$(sha256sum layer.tar | cut -d' ' -f1)
-            mv layer.tar $out/blobs/sha256/$LAYER_SHA
-
-            # Config blob
-            cat > config.json <<EOF
+            layers=""
+            for i in $(< ${closure}/store-paths); do
+              layer="--layer $i:$i"
+              layers="$layers $layer"
+            done
+            oci-tool --rootfs ${rootfs} --output res ${builtins.concatStringsSep " " (map (x: "-c " + x) cmd)} $layers
+            touch res/oci-layout
+            cat > res/oci-layout <<EOF
             {
-              "architecture": "${arch}",
-              "os": "linux",
-              "rootfs": { "type": "layers", "diff_ids": ["sha256:$LAYER_SHA"] },
-              "config": { "Cmd": [${lib.concatStringsSep ", " (map (c: "\"${c}\"") cmd)}] }
+                "imageLayoutVersion": "1.0.0"
             }
             EOF
-
-            CFG_SHA=$(sha256sum config.json | cut -d' ' -f1)
-            cp config.json $out/blobs/sha256/$CFG_SHA
-
-            # Manifest
-            cat > manifest.json <<EOF
-            {
-              "schemaVersion": 2,
-              "config": { "mediaType": "application/vnd.oci.image.config.v1+json", "digest": "sha256:$CFG_SHA", "size": $(stat -c%s config.json) },
-              "layers": [
-                { "mediaType": "application/vnd.oci.image.layer.v1.tar", "digest": "sha256:$LAYER_SHA", "size": $(stat -c%s $out/blobs/sha256/$LAYER_SHA) }
-              ]
-            }
-            EOF
-            M_SHA=$(sha256sum manifest.json | cut -d' ' -f1)
-            cp manifest.json $out/blobs/sha256/$M_SHA
-
-            # Index
-            cat > $out/index.json <<EOF
-            {
-              "schemaVersion": 2,
-              "manifests": [
-                { "mediaType": "application/vnd.oci.image.manifest.v1+json", "digest": "sha256:$M_SHA", "size": $(stat -c%s manifest.json) }
-              ]
-            }
-            EOF
+            tar -C res -cf $out .
           '';
         };
     in
       buildOCIImage {
-        rootfs = oci-rootfs;
+        rootfs = config.system.build.toplevel;
+        closure = pkgs.closureInfo {
+          rootPaths = [config.system.build.toplevel];
+        };
         cmd = ["/init"];
       };
     system.build.dockerImage = let

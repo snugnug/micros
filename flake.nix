@@ -1,8 +1,10 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
+  inputs.oci-tool.url = "github:damitusthyyeetus123/oci-tool";
   outputs = {
     self,
     nixpkgs,
+    oci-tool,
     ...
   } @ inputs: let
     inherit (self) lib;

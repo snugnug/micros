@@ -47,7 +47,7 @@ in {
           # Bring network interfaces up
           ifup -v -a -E ${(pkgs.callPackage ../../../../../pkgs/ifupdown-ng.nix {})}/usr/libexec/ifupdown-ng
 
-          ${optionalString (config.networking.timeServers != []) ''
+          ${optionalString (config.networking.timeServers != [] && config.boot.isContainer == false) ''
             # Configure timeservers
             ${pkgs.ntp}/bin/ntpdate ${toString config.networking.timeServers}
           ''}
