@@ -57,7 +57,7 @@
               layer="--layer $i:$i"
               layers="$layers $layer"
             done
-            oci-tool --rootfs ${rootfs} --output res ${builtins.concatStringsSep " " (map (x: "-c " + x) cmd)} $layers
+            oci-tool --rootfs ${rootfs} --output res ${builtins.concatStringsSep " " (map (x: "-c " + x) cmd)} --env PATH=/sw/bin --compress $layers
             touch res/oci-layout
             cat > res/oci-layout <<EOF
             {

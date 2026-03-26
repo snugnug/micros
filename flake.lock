@@ -37,11 +37,11 @@
         "nixpkgs": "nixpkgs_2"
       },
       "locked": {
-        "lastModified": 1774303877,
-        "narHash": "sha256-CeE1/LqIY8hQwnDLsV/q5LHy4R4TW6HFlTIelZZSZvI=",
+        "lastModified": 1774480170,
+        "narHash": "sha256-B5q5JJcM2o/0MZP08/jmT4trPsHwyeN1OXMzM5qilBo=",
         "owner": "damitusthyyeetus123",
         "repo": "oci-tool",
-        "rev": "42cd02e5b87810b427a154045ab4a41ccbf12414",
+        "rev": "0c4f1eebd14e8190cab9038f69be77b3ae58115b",
         "type": "github"
       },
       "original": {

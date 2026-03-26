@@ -313,7 +313,7 @@ in {
             then "ln -s ${kernel} $out/kernel-modules"
             else ""
           }
-          echo $activationScript > $out/activate
+          echo "$activationScript" > $out/activate
           substituteInPlace $out/activate --subst-var out
           chmod u+x $out/activate
 
