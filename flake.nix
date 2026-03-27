@@ -47,7 +47,10 @@
         modules = [
           ./micros/modules/profiles/virtualization/lxc-profile.nix
           {
-            nixpkgs.hostPlatform = {inherit system;};
+            nixpkgs.hostPlatform = {
+              inherit system;
+              config = "x86_64-unknown-linux-musl";
+            };
           }
         ];
       };

@@ -6,7 +6,7 @@ export HOME=/root PATH="@path@"
 
 if [ "${IN_NIXOS_SYSTEMD_STAGE1:-}" != true ]; then
   # Process the kernel command line.
-  for o in $(</proc/cmdline); do
+  for o in $(cat /proc/cmdline); do
     case $o in
     boot.debugtrace)
       # Show each command.
@@ -17,7 +17,7 @@ if [ "${IN_NIXOS_SYSTEMD_STAGE1:-}" != true ]; then
 
   # Print a greeting.
   echo
-  echo -e "\e[1;32m<<< MicrOS Stage 2 >>>\e[0m"
+  printf "\e[1;32m<<< MicrOS Stage 2 >>>\e[0m"
   echo
 
   # Normally, stage 1 mounts the root filesystem read/writable.
@@ -46,7 +46,7 @@ if [ ! -e /proc/1 ]; then
     install -m 0755 -d "$mountPoint"
     mount -n -t "$fsType" -o "$options" "$device" "$mountPoint"
   }
-  source @earlyMountScript@
+  . @earlyMountScript@
 fi
 
 if [ "${IN_NIXOS_SYSTEMD_STAGE1:-}" = true ] || [ ! -c /dev/kmsg ]; then
@@ -62,30 +62,34 @@ fi
 # like squashfs.
 chown -f 0:30000 /nix/store
 chmod -f 1775 /nix/store
-if ! [[ "$(findmnt --noheadings --output OPTIONS /nix/store)" =~ ro(,|$) ]]; then
+
+case "$(findmnt --noheadings --output OPTIONS /nix/store)" in
+*ro*)
   if [ -z "$container" ]; then
     mount --bind /nix/store /nix/store
   else
     mount --rbind /nix/store /nix/store
   fi
   mount -o remount,ro,bind /nix/store
-fi
+  ;;
+esac
 
-if [ "${IN_NIXOS_SYSTEMD_STAGE1:-}" != true ]; then
-  # Log the script output to /dev/kmsg or /run/log/stage-2-init.log.
-  # Only at this point are all the necessary prerequisites ready for these commands.
-  exec {logOutFd}>&1 {logErrFd}>&2
-  if test -w /dev/kmsg; then
-    exec > >(tee -i /proc/self/fd/"$logOutFd" | while read -r line; do
-      if test -n "$line"; then
-        echo "<7>stage-2-init: $line" >/dev/kmsg
-      fi
-    done) 2>&1
-  else
-    mkdir -p /run/log
-    exec > >(tee -i /run/log/stage-2-init.log) 2>&1
-  fi
-fi
+# Skip logging for now, TODO: Re-add logging that works with ash
+#if [ "${IN_NIXOS_SYSTEMD_STAGE1:-}" != true ]; then
+# Log the script output to /dev/kmsg or /run/log/stage-2-init.log.
+# Only at this point are all the necessary prerequisites ready for these commands.
+#  exec {logOutFd}>&1 {logErrFd}>&2
+#  if test -w /dev/kmsg; then
+#    exec > >(tee -i /proc/self/fd/"$logOutFd" | while read -r line; do
+#      if test -n "$line"; then
+#        echo "<7>stage-2-init: $line" >/dev/kmsg
+#      fi
+#    done) 2>&1
+#  else
+#    mkdir -p /run/log
+#    exec > >(tee -i /run/log/stage-2-init.log) 2>&1
+#  fi
+#fi
 
 # Required by the activation script
 install -m 0755 -d /etc

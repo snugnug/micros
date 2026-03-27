@@ -3,6 +3,7 @@
   stdenv,
   libbsd,
   iproute2,
+  busybox,
   ...
 }:
 stdenv.mkDerivation {
@@ -19,6 +20,7 @@ stdenv.mkDerivation {
   patches = [
     ./ifupdown-fix-path.patch
   ];
+
   installPhase = ''
     runHook preInstall
     mkdir -p $out/bin

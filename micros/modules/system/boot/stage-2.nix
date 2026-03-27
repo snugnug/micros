@@ -10,12 +10,11 @@
       isExecutable = true;
 
       replacements = {
-        shell = "${pkgs.bash}/bin/bash";
+        shell = "${pkgs.busybox}/bin/ash";
         systemConfig = null; # replaced in ../activation/top-level.nix
 
         path = lib.makeBinPath [
-          pkgs.coreutils
-          pkgs.util-linuxMinimal
+          pkgs.busybox
         ];
 
         # The Runit executable to be run at the end of the script.

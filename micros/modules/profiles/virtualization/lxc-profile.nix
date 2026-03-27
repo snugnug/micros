@@ -7,4 +7,5 @@
   imports = [
     ../../virtualisation/lxc-container.nix
   ];
+  networking.timeServers = [];
 }

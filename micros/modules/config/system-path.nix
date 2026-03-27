@@ -10,6 +10,9 @@ let
   inherit (lib) mkOption literalExpression;
   inherit (lib) types;
 
+  requiredPackagesMinimal = map (pkg: lib.setPrio ((pkg.meta.priority or lib.meta.defaultPriority) + 3) pkg) [
+    pkgs.busybox
+  ];
   requiredPackages = map (pkg: lib.setPrio ((pkg.meta.priority or lib.meta.defaultPriority) + 3) pkg) [
     pkgs.util-linuxMinimal
     pkgs.busybox
@@ -71,7 +74,10 @@ in {
   };
 
   config = {
-    environment.systemPackages = requiredPackages;
+    environment.systemPackages =
+      if (config.boot.isContainer == true)
+      then requiredPackagesMinimal
+      else requiredPackages;
     environment.pathsToLink = ["/bin"];
     system.path = pkgs.buildEnv {
       name = "system-path";
