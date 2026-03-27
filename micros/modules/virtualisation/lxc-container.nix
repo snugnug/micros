@@ -15,7 +15,6 @@
   };
 
   config = {
-    boot.isContainer = true;
     system.build.ociImage = let
       oci-rootfs = let
         closureInfo = pkgs.closureInfo {

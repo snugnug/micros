@@ -4,8 +4,6 @@
   lib,
   ...
 }: {
-  imports = [
-    ../../virtualisation/lxc-container.nix
-  ];
+  boot.isContainer = true;
   networking.timeServers = [];
 }

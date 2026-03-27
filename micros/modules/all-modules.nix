@@ -27,6 +27,7 @@
   ./tasks/filesystems.nix
 
   ./virtualisation/qemu.nix
+  ./virtualisation/lxc-container.nix
 
   ./environment.nix
   ./networking/networking.nix
