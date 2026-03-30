@@ -11,11 +11,7 @@ with lib; let
       // (lib.optionalAttrs (v.text != "") {
         text = ''
           #### Activation script snippet ${a}:
-          _localstatus=0
           ${v.text}
-          if (( _localstatus > 0 )); then
-            printf "Activation script snippet '%s' failed (%s)\n" "${a}" "$_localstatus"
-          fi
         '';
       })
   );
@@ -42,7 +38,6 @@ with lib; let
     done
 
     _status=0
-    trap "_status=1 _localstatus=\$?" ERR
 
     # Ensure a consistent umask.
     umask 0022
