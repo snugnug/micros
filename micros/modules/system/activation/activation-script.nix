@@ -3,8 +3,8 @@
   pkgs,
   lib,
   ...
-}:
-with lib; let
+}: let
+  inherit (lib) mapAttrs isString noDepEntry textClosureList attrNames mkOption literalExpression types getBin;
   addAttributeName = mapAttrs (
     a: v:
       v
@@ -51,18 +51,17 @@ with lib; let
   path =
     if (config.boot.isContainer == false)
     then
-      (with pkgs;
-        map getBin [
-          coreutils
-          gnugrep
-          findutils
-          getent
-          stdenv.cc.libc # nscd in update-users-groups.pl
-          shadow
-          util-linux # needed for mount and mountpoint
-        ])
+      (map getBin (with pkgs; [
+        coreutils
+        gnugrep
+        findutils
+        getent
+        stdenv.cc.libc # nscd in update-users-groups.pl
+        shadow
+        util-linux # needed for mount and mountpoint
+      ]))
     else (with pkgs; map getBin [busybox]);
-  scriptType = with types; let
+  scriptType = let
     scriptOptions = {
       deps = mkOption {
         type = types.listOf types.str;
@@ -75,7 +74,7 @@ with lib; let
       };
     };
   in
-    either str (submodule {
+    types.either types.str (types.submodule {
       options = scriptOptions;
     });
 in {

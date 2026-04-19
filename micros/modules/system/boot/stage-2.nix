@@ -13,9 +13,10 @@
         shell = "${pkgs.busybox}/bin/ash";
         systemConfig = null; # replaced in ../activation/top-level.nix
 
-        path = lib.makeBinPath [
-          pkgs.busybox
-        ];
+        path = lib.makeBinPath ([
+            pkgs.busybox
+          ]
+          ++ (lib.lists.optionals (config.boot.isContainer == false) [pkgs.util-linuxMinimal]));
 
         # The Runit executable to be run at the end of the script.
         runitExecutable = "${pkgs.runit}/bin/runit";

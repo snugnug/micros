@@ -4,9 +4,11 @@
   lib,
   inputs,
   ...
-}: {
+}: let
+  inherit (lib.options) mkOption;
+in {
   options.system.build = {
-    ociImage = lib.mkOption {
+    ociImage = mkOption {
       description = ''
         OCI compatible image.
       '';
@@ -30,9 +32,8 @@
             mkdir -p $out/nix/store
             mkdir -p $out/run/booted-system
 
-            cd $out/run/booted-system
-            cp ${closureInfo}/registration nix-path-registration
-            cp -a ${toplevel}/* .
+            cp $out/run/booted-system/${closureInfo}/registration nix-path-registration
+            cp -a $out/run/booted-system/${toplevel}/* .
 
             cd $out
             for i in $(< ${closureInfo}/store-paths); do

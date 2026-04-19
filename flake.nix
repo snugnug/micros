@@ -30,7 +30,6 @@
             }
           ];
         }).config.system.build.image;
-
       qemu =
         (lib.microsSystem {
           specialArgs = {inherit inputs lib;};

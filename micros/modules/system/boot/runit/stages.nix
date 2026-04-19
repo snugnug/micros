@@ -55,7 +55,7 @@ in {
           # Bring network interfaces up
           ${
             if (config.boot.isContainer == false)
-            then "ifup -v -a -E ${(pkgs.callPackage ../../../../../pkgs/ifupdown-ng.nix {})}/usr/libexec/ifupdown-ng"
+            then "ifup -v -a -E ${(pkgs.ifupdown-ng)}/usr/libexec/ifupdown-ng"
             else ""
           }
 

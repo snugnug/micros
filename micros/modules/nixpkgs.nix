@@ -9,6 +9,7 @@
         systemd = null;
         systemdSupport = false;
       };
+      ifupdown-ng = prev.callPackage ../../pkgs/ifupdown-ng.nix {};
     })
   ];
 }
