@@ -1,10 +1,12 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
   inputs.oci-tool.url = "github:damitusthyyeetus123/oci-tool";
+  inputs.nixos-core.url = "github:feel-co/nixos-core?ref=notashelf/push-zpuvkpopymtz";
   outputs = {
     self,
     nixpkgs,
     oci-tool,
+    nixos-core,
     ...
   } @ inputs: let
     inherit (self) lib;
@@ -26,7 +28,9 @@
             ./micros/modules/profiles/virtualization/iso-image.nix
 
             {
-              nixpkgs.hostPlatform = {inherit system;};
+              nixpkgs.hostPlatform = {
+                inherit system;
+              };
             }
           ];
         }).config.system.build.image;

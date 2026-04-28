@@ -16,7 +16,7 @@
   ./system/activation.nix
   ./system/activation/activation-script.nix
   ./system/build.nix
-  ./system/etc-setup-bash.nix
+  ./system/etc-setup.nix
   ./system/name.nix
 
   ./services/nix-daemon.nix

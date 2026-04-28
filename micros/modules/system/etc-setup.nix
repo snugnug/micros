@@ -7,6 +7,7 @@
 {
   config,
   pkgs,
+  inputs,
   lib,
   ...
 }: let
@@ -67,11 +68,9 @@
         )
         etc'}
     '';
-
-  setupEtcSh = ./setup-etc.sh;
 in {
   system.activationScripts.etc = lib.mkForce (lib.stringAfter ["users"] ''
     echo "setting up /etc..."
-    ${pkgs.busybox}/bin/ash ${setupEtcSh} ${buildEtc}/etc
+    ${inputs.nixos-core.packages.${pkgs.stdenv.system}.default}/bin/nixos-core setup-etc ${buildEtc}/etc
   '');
 }

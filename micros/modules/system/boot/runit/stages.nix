@@ -43,7 +43,7 @@ in {
         type = types.lines;
         default = ''
           #!${pkgs.busybox}/bin/ash
-          PATH=/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
+          PATH=/run/booted-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
 
           # If /etc/ssh is missing, create it.
           [ ! -d /etc/ssh ] && mkdir -p /etc/ssh
@@ -82,7 +82,7 @@ in {
           # used to configure a monitored service.
           mkdir -p /etc/service
 
-          PATH=/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
+          PATH=/run/booted-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
           exec env - PATH=$PATH ${pkgs.runit}/bin/runsvdir -P /etc/service
         '';
       };

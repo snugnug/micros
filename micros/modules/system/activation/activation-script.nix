@@ -26,13 +26,14 @@
       set;
     withHeadlines = addAttributeName set';
   in ''
+    #! ${pkgs.busybox}/bin/ash
 
     warn() {
         printf "\033[1;35mwarning:\033[0m %s\n" "$*" >&2
     }
     systemConfig='@out@'
 
-    export PATH=/empty
+    export PATH=/run/booted-system/sw/bin
     for i in ${toString path}; do
         PATH=$PATH:$i/bin:$i/sbin
     done
@@ -47,6 +48,7 @@
         textClosureList withHeadlines (attrNames (lib.filterAttrs (_: v: v.text != "") withHeadlines))
       )
     )}
+    export PATH=/run/booted-system/sw/bin
   '';
   path =
     if (config.boot.isContainer == false)

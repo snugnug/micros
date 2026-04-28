@@ -43,7 +43,7 @@
 
       shell = mkOption {
         type = with types; nullOr (either shellPackage path);
-        default = "/run/current-system/sw/bin/bash";
+        default = "/run/booted-system/sw/bin/ash";
         description = "Account login shell";
       };
 
