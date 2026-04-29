@@ -1,6 +1,7 @@
 {
   config,
   pkgs,
+  inputs,
   lib,
   ...
 }: let
@@ -111,7 +112,9 @@
         copy_bin_and_libs $BIN
       done
 
-      copy_bin_and_libs ${pkgs.dhcpcd}/bin/dhcpcd
+      for BIN in ${pkgs.nixos-core}/{s,}bin/*; do
+        copy_bin_and_libs $BIN
+      done
 
       # Copy ld manually since it isn't detected correctly
       cp -pv ${pkgs.glibc.out}/lib/ld*.so.? $out/lib
@@ -155,349 +158,310 @@
       $out/bin/mount --help 2>&1 | grep -q "BusyBox"
     '';
 
-  shell = "${extraUtils}/bin/sh";
+  fsInfo = let
+    f = fs: [
+      fs.mountPoint
+      (
+        if fs.device != null
+        then fs.device
+        else "/dev/disk/by-label/${fs.label}"
+      )
+      fs.fsType
+      (builtins.concatStringsSep "," fs.options)
+    ];
+  in
+    pkgs.writeText "initrd-fsinfo" (lib.concatStringsSep "\n" (lib.concatMap f fileSystems));
+  mdevRules = pkgs.writeText "mdev-conf" ''
+          #
+    # This is a sample mdev.conf.
+    #
 
-  dhcpHook = pkgs.writeScript "dhcpHook" ''
-    #!${shell}
+    # Devices:
+    # Syntax: %s %d:%d %s
+    # devices user:group mode
+
+    $MODALIAS=.*	0:0	0660	@modprobe -q -b "$MODALIAS"
+
+    # null does already exist; therefore ownership has to be changed with command
+    null	0:0 0666	@chmod 666 $MDEV
+    zero	0:0 0666
+    full	0:0 0666
+
+    random	0:0 0666
+    urandom	0:0 0444
+    hwrandom 0:0 0660
+
+    console 0:0 0600
+
+    # load frambuffer console when first frambuffer is found
+    fb0	0:0 0660 @modprobe -q -b fbcon
+    vchiq	0:0 0660
+
+    fd0	0:0 0660
+    kmem	0:0 0640
+    mem	0:0 0640
+    port	0:0 0640
+    ptmx	0:0 0666
+
+    # Kernel-based Virtual Machine.
+    kvm		0:0 660
+
+    # ram.*
+    ram([0-9]*)	0:0 0660 >rd/%1
+    loop([0-9]+)	0:0 0660 >loop/%1
+
+    # persistent storage
+    dasd.*		0:0 0660 *${mdevHelper}
+    mmcblk.*	0:0 0660 *${mdevHelper}
+    nbd.*		0:0 0660 *${mdevHelper}
+    nvme.*		0:0 0660 *${mdevHelper}
+    sd[a-z].*	0:0 0660 *${mdevHelper}
+    sr[0-9]+	0:0 0660 *${mdevHelper}
+    vd[a-z].*	0:0 0660 *${mdevHelper}
+    xvd[a-z].*	0:0 0660 *${mdevHelper}
+
+    md[0-9]		0:0 0660
+
+    tty		0:0 0666
+    tty[0-9]	0:0 0600
+    tty[0-9][0-9]	0:0 0660
+    ttyS[0-9]*	0:0 0660
+    pty.*		0:0 0660
+    vcs[0-9]*	0:0 0660
+    vcsa[0-9]*	0:0 0660
+
+    # rpi bluetooth
+    #ttyAMA0	0:0 660 @btattach -B /dev/$MDEV -P bcm -S 115200 -N &
+
+    ttyACM[0-9]	0:0 0660 @ln -sf $MDEV modem
+    ttyUSB[0-9]	0:0 0660 @ln -sf $MDEV modem
+    ttyLTM[0-9]	0:0 0660 @ln -sf $MDEV modem
+    ttySHSF[0-9]	0:0 0660 @ln -sf $MDEV modem
+    slamr		0:0 0660 @ln -sf $MDEV slamr0
+    slusb		0:0 0660 @ln -sf $MDEV slusb0
+    fuse		0:0  0666
+
+    # dri device
+    dri/.*		0:0 0660
+    card[0-9]	0:0 0660 =dri/
+
+    # alsa sound devices and audio stuff
+    pcm.*		0:0 0660	=snd/
+    control.*	0:0 0660	=snd/
+    midi.*		0:0 0660	=snd/
+    seq		0:0 0660	=snd/
+    timer		0:0 0660	=snd/
+
+    adsp		0:0 0660 >sound/
+    audio		0:0 0660 >sound/
+    dsp		0:0 0660 >sound/
+    mixer		0:0 0660 >sound/
+    sequencer.*	0:0 0660 >sound/
+
+    SUBSYSTEM=sound;.*	0:0 0660
+
+    # PTP devices
+    ptp[0-9]	0:0 0660 */lib/mdev/ptpdev
+
+    # virtio-ports
+    SUBSYSTEM=virtio-ports;vport.* 0:0 0600 @mkdir -p virtio-ports; ln -sf ../$MDEV virtio-ports/$(cat /sys/class/virtio-ports/$MDEV/name)
+
+    # misc stuff
+    agpgart		0:0 0660  >misc/
+    psaux		0:0 0660  >misc/
+    rtc		0:0 0664  >misc/
+
+    # input stuff
+    SUBSYSTEM=input;.*  0:0 0660
+
+    # v4l stuff
+    vbi[0-9]	0:0 0660 >v4l/
+    0[0-9]+	0:0 0660 >v4l/
+
+    # dvb stuff
+    dvb.*		0:0 0660 */lib/mdev/dvbdev
+
+    # load drivers for usb devices
+    usb[0-9]+	0:0 0660 */lib/mdev/usbdev
+
+    # net devices
+    # 666 is fine: https://www.kernel.org/doc/Documentation/networking/tuntap.txt
+    net/tun[0-9]*	0:0 0666
+    net/tap[0-9]*	0:0 0666
+
+    # zaptel devices
+    zap(.*)		0:0 0660 =zap/%1
+    dahdi!(.*)	0:0 0660 =dahdi/%1
+    dahdi/(.*)	0:0 0660 =dahdi/%1
+
+    # raid controllers
+    cciss!(.*)	0:0 0660 =cciss/%1
+    cciss/(.*)	0:0 0660 =cciss/%1
+    ida!(.*)	0:0 0660 =ida/%1
+    ida/(.*)	0:0 0660 =ida/%1
+    rd!(.*)		0:0 0660 =rd/%1
+    rd/(.*)		0:0 0660 =rd/%1
+
+    # tape devices
+    nst[0-9]+.*	0:0 0660
+    st[0-9]+.*	0:0 0660
+
+    # fallback for any!device -> any/device
+    (.*)!(.*)	0:0 0660 =%1/%2
+
   '';
+  mdevHelper = pkgs.writeTextFile {
+    name = "mdev-helper";
+    executable = true;
+    text = ''
+      #!${extraUtils}/bin/ash
 
-  bootStage1 = pkgs.replaceVarsWith {
-    src = ./stage-1-init.sh;
-    isExecutable = true;
+      symlink_action() {
+      	case "$ACTION" in
+      		add) ln -sf "$1" "$2";;
+      		remove) rm -f "$2";;
+      	esac
+      }
 
-    replacements = {
-      shell = "${extraUtils}/bin/ash";
-      modprobe = "${pkgs.kmod}/bin/modprobe";
-      # Expects $targetRoot to be set in the stage-1 script.
-      mountScript = ''
-        ${config.not-os.preMount}
+      sanitise_file() {
+      	sed -E -e 's/^\s+//' -e 's/\s+$//' -e 's/ /_/g' "$@" 2>/dev/null
+      }
 
-        # TODO: this should be handled better
-        realroot=tmpfs
+      sanitise_string() {
+      	echo "$@" | sanitise_file
+      }
 
-        if [ "$realroot" = tmpfs ]; then
-          mount -t tmpfs root "$targetRoot" -o size=1G
-        else
-          mount "$realroot" "$targetRoot"
-        fi
+      blkid_encode_string() {
+      	# Rewrites string similar to libblk's blkid_encode_string
+      	# function which is used by udev/eudev.
+      	echo "$@" | sed -e 's| |\\x20|g'
+      }
 
-        chmod 755 $targetRoot
+      : ''${SYSFS:=/sys}
 
-        ${config.not-os.postMount}
-      '';
-
-      mdevRules = pkgs.writeText "mdev-conf" ''
-              #
-        # This is a sample mdev.conf.
-        #
-
-        # Devices:
-        # Syntax: %s %d:%d %s
-        # devices user:group mode
-
-        $MODALIAS=.*	0:0	0660	@modprobe -q -b "$MODALIAS"
-
-        # null does already exist; therefore ownership has to be changed with command
-        null	0:0 0666	@chmod 666 $MDEV
-        zero	0:0 0666
-        full	0:0 0666
-
-        random	0:0 0666
-        urandom	0:0 0444
-        hwrandom 0:0 0660
-
-        console 0:0 0600
-
-        # load frambuffer console when first frambuffer is found
-        fb0	0:0 0660 @modprobe -q -b fbcon
-        vchiq	0:0 0660
-
-        fd0	0:0 0660
-        kmem	0:0 0640
-        mem	0:0 0640
-        port	0:0 0640
-        ptmx	0:0 0666
-
-        # Kernel-based Virtual Machine.
-        kvm		0:0 660
-
-        # ram.*
-        ram([0-9]*)	0:0 0660 >rd/%1
-        loop([0-9]+)	0:0 0660 >loop/%1
-
-        # persistent storage
-        dasd.*		0:0 0660 */opt/mdev/helpers/storage-device
-        mmcblk.*	0:0 0660 */opt/mdev/helpers/storage-device
-        nbd.*		0:0 0660 */opt/mdev/helpers/storage-device
-        nvme.*		0:0 0660 */opt/mdev/helpers/storage-device
-        sd[a-z].*	0:0 0660 */opt/mdev/helpers/storage-device
-        sr[0-9]+	0:0 0660 */opt/mdev/helpers/storage-device
-        vd[a-z].*	0:0 0660 */opt/mdev/helpers/storage-device
-        xvd[a-z].*	0:0 0660 */opt/mdev/helpers/storage-device
-
-        md[0-9]		0:0 0660
-
-        tty		0:0 0666
-        tty[0-9]	0:0 0600
-        tty[0-9][0-9]	0:0 0660
-        ttyS[0-9]*	0:0 0660
-        pty.*		0:0 0660
-        vcs[0-9]*	0:0 0660
-        vcsa[0-9]*	0:0 0660
-
-        # rpi bluetooth
-        #ttyAMA0	0:0 660 @btattach -B /dev/$MDEV -P bcm -S 115200 -N &
-
-        ttyACM[0-9]	0:0 0660 @ln -sf $MDEV modem
-        ttyUSB[0-9]	0:0 0660 @ln -sf $MDEV modem
-        ttyLTM[0-9]	0:0 0660 @ln -sf $MDEV modem
-        ttySHSF[0-9]	0:0 0660 @ln -sf $MDEV modem
-        slamr		0:0 0660 @ln -sf $MDEV slamr0
-        slusb		0:0 0660 @ln -sf $MDEV slusb0
-        fuse		0:0  0666
-
-        # dri device
-        dri/.*		0:0 0660
-        card[0-9]	0:0 0660 =dri/
-
-        # alsa sound devices and audio stuff
-        pcm.*		0:0 0660	=snd/
-        control.*	0:0 0660	=snd/
-        midi.*		0:0 0660	=snd/
-        seq		0:0 0660	=snd/
-        timer		0:0 0660	=snd/
-
-        adsp		0:0 0660 >sound/
-        audio		0:0 0660 >sound/
-        dsp		0:0 0660 >sound/
-        mixer		0:0 0660 >sound/
-        sequencer.*	0:0 0660 >sound/
-
-        SUBSYSTEM=sound;.*	0:0 0660
-
-        # PTP devices
-        ptp[0-9]	0:0 0660 */lib/mdev/ptpdev
-
-        # virtio-ports
-        SUBSYSTEM=virtio-ports;vport.* 0:0 0600 @mkdir -p virtio-ports; ln -sf ../$MDEV virtio-ports/$(cat /sys/class/virtio-ports/$MDEV/name)
-
-        # misc stuff
-        agpgart		0:0 0660  >misc/
-        psaux		0:0 0660  >misc/
-        rtc		0:0 0664  >misc/
-
-        # input stuff
-        SUBSYSTEM=input;.*  0:0 0660
-
-        # v4l stuff
-        vbi[0-9]	0:0 0660 >v4l/
-        0[0-9]+	0:0 0660 >v4l/
-
-        # dvb stuff
-        dvb.*		0:0 0660 */lib/mdev/dvbdev
-
-        # load drivers for usb devices
-        usb[0-9]+	0:0 0660 */lib/mdev/usbdev
-
-        # net devices
-        # 666 is fine: https://www.kernel.org/doc/Documentation/networking/tuntap.txt
-        net/tun[0-9]*	0:0 0666
-        net/tap[0-9]*	0:0 0666
-
-        # zaptel devices
-        zap(.*)		0:0 0660 =zap/%1
-        dahdi!(.*)	0:0 0660 =dahdi/%1
-        dahdi/(.*)	0:0 0660 =dahdi/%1
-
-        # raid controllers
-        cciss!(.*)	0:0 0660 =cciss/%1
-        cciss/(.*)	0:0 0660 =cciss/%1
-        ida!(.*)	0:0 0660 =ida/%1
-        ida/(.*)	0:0 0660 =ida/%1
-        rd!(.*)		0:0 0660 =rd/%1
-        rd/(.*)		0:0 0660 =rd/%1
-
-        # tape devices
-        nst[0-9]+.*	0:0 0660
-        st[0-9]+.*	0:0 0660
-
-        # fallback for any!device -> any/device
-        (.*)!(.*)	0:0 0660 =%1/%2
-
-      '';
-
-      mdevHelper = pkgs.writeText "mdev-helper" ''
-        #!/bin/sh
-
-        symlink_action() {
-        	case "$ACTION" in
-        		add) ln -sf "$1" "$2";;
-        		remove) rm -f "$2";;
-        	esac
-        }
-
-        sanitise_file() {
-        	sed -E -e 's/^\s+//' -e 's/\s+$//' -e 's/ /_/g' "$@" 2>/dev/null
-        }
-
-        sanitise_string() {
-        	echo "$@" | sanitise_file
-        }
-
-        blkid_encode_string() {
-        	# Rewrites string similar to libblk's blkid_encode_string
-        	# function which is used by udev/eudev.
-        	echo "$@" | sed -e 's| |\\x20|g'
-        }
-
-        : ''${SYSFS:=/sys}
-
-        # cdrom symlink
-        case "$MDEV" in
-        	sr*|xvd*)
-        		caps="$(cat $SYSFS/block/$MDEV/capability 2>/dev/null)"
-        		if [ $(( 0x''${caps:-0} & 8 )) -gt 0 ]; then
-        			symlink_action $MDEV cdrom
-        		fi
-        esac
+      # cdrom symlink
+      case "$MDEV" in
+      	sr*|xvd*)
+      		caps="$(cat $SYSFS/block/$MDEV/capability 2>/dev/null)"
+      		if [ $(( 0x''${caps:-0} & 8 )) -gt 0 ]; then
+      			symlink_action $MDEV cdrom
+      		fi
+      esac
 
 
-        # /dev/block symlinks
-        mkdir -p block
-        if [ -f "$SYSFS/class/block/$MDEV/dev" ]; then
-        	maj_min=$(sanitise_file "$SYSFS/class/block/$MDEV/dev")
-        	symlink_action ../$MDEV block/''${maj_min}
-        fi
+      # /dev/block symlinks
+      mkdir -p block
+      if [ -f "$SYSFS/class/block/$MDEV/dev" ]; then
+      	maj_min=$(sanitise_file "$SYSFS/class/block/$MDEV/dev")
+      	symlink_action ../$MDEV block/''${maj_min}
+      fi
 
 
-        # by-id symlinks
-        mkdir -p disk/by-id
+      # by-id symlinks
+      mkdir -p disk/by-id
 
-        if [ -f "$SYSFS/class/block/$MDEV/partition" ]; then
-        	# This is a partition of a device, find out its parent device
-        	_parent_dev="$(basename $(''${SBINDIR:-/usr/bin}/readlink -f "$SYSFS/class/block/$MDEV/.."))"
+      if [ -f "$SYSFS/class/block/$MDEV/partition" ]; then
+      	# This is a partition of a device, find out its parent device
+      	_parent_dev="$(basename $(''${SBINDIR:-/usr/bin}/readlink -f "$SYSFS/class/block/$MDEV/.."))"
 
-        	partition=$(cat $SYSFS/class/block/$MDEV/partition 2>/dev/null)
-        	case "$partition" in
-        		[0-9]*) partsuffix="-part$partition";;
-        	esac
-        	# Get name, model, serial, wwid from parent device of the partition
-        	_check_dev="$_parent_dev"
-        else
-        	_check_dev="$MDEV"
-        fi
+      	partition=$(cat $SYSFS/class/block/$MDEV/partition 2>/dev/null)
+      	case "$partition" in
+      		[0-9]*) partsuffix="-part$partition";;
+      	esac
+      	# Get name, model, serial, wwid from parent device of the partition
+      	_check_dev="$_parent_dev"
+      else
+      	_check_dev="$MDEV"
+      fi
 
-        model=$(sanitise_file "$SYSFS/class/block/$_check_dev/device/model")
-        name=$(sanitise_file "$SYSFS/class/block/$_check_dev/device/name")
-        serial=$(sanitise_file "$SYSFS/class/block/$_check_dev/device/serial")
-        wwid=$(sanitise_file "$SYSFS/class/block/$_check_dev/wwid")
-        : ''${wwid:=$(sanitise_file "$SYSFS/class/block/$_check_dev/device/wwid")}
+      model=$(sanitise_file "$SYSFS/class/block/$_check_dev/device/model")
+      name=$(sanitise_file "$SYSFS/class/block/$_check_dev/device/name")
+      serial=$(sanitise_file "$SYSFS/class/block/$_check_dev/device/serial")
+      wwid=$(sanitise_file "$SYSFS/class/block/$_check_dev/wwid")
+      : ''${wwid:=$(sanitise_file "$SYSFS/class/block/$_check_dev/device/wwid")}
 
-        # Sets variables LABEL, PARTLABEL, PARTUUID, TYPE, UUID depending on
-        # blkid output (busybox blkid will not provide PARTLABEL or PARTUUID)
-        eval $(blkid /dev/$MDEV | cut -d: -f2-)
+      # Sets variables LABEL, PARTLABEL, PARTUUID, TYPE, UUID depending on
+      # blkid output (busybox blkid will not provide PARTLABEL or PARTUUID)
+      eval $(blkid /dev/$MDEV | cut -d: -f2-)
 
-        if [ -n "$wwid" ]; then
-        	case "$MDEV" in
-        		nvme*) symlink_action ../../$MDEV disk/by-id/nvme-''${wwid}''${partsuffix};;
-        	esac
-        	case "$wwid" in
-        		naa.*) symlink_action ../../$MDEV disk/by-id/wwn-0x''${wwid#naa.};;
-        	esac
-        fi
+      if [ -n "$wwid" ]; then
+      	case "$MDEV" in
+      		nvme*) symlink_action ../../$MDEV disk/by-id/nvme-''${wwid}''${partsuffix};;
+      	esac
+      	case "$wwid" in
+      		naa.*) symlink_action ../../$MDEV disk/by-id/wwn-0x''${wwid#naa.};;
+      	esac
+      fi
 
-        if [ -n "$serial" ]; then
-        	if [ -n "$model" ]; then
-        		case "$MDEV" in
-        			nvme*) symlink_action ../../$MDEV disk/by-id/nvme-''${model}_''${serial}''${partsuffix};;
-        			sd*) symlink_action ../../$MDEV disk/by-id/ata-''${model}_''${serial}''${partsuffix};;
-        		esac
-        	fi
-        	if [ -n "$name" ]; then
-        		case "$MDEV" in
-        			mmcblk*) symlink_action ../../$MDEV disk/by-id/mmc-''${name}_''${serial}''${partsuffix};;
-        		esac
-        	fi
+      if [ -n "$serial" ]; then
+      	if [ -n "$model" ]; then
+      		case "$MDEV" in
+      			nvme*) symlink_action ../../$MDEV disk/by-id/nvme-''${model}_''${serial}''${partsuffix};;
+      			sd*) symlink_action ../../$MDEV disk/by-id/ata-''${model}_''${serial}''${partsuffix};;
+      		esac
+      	fi
+      	if [ -n "$name" ]; then
+      		case "$MDEV" in
+      			mmcblk*) symlink_action ../../$MDEV disk/by-id/mmc-''${name}_''${serial}''${partsuffix};;
+      		esac
+      	fi
 
-        	# virtio-blk
-        	case "$MDEV" in
-        		vd*) symlink_action ../../$MDEV disk/by-id/virtio-''${serial}''${partsuffix};;
-        	esac
-        fi
+      	# virtio-blk
+      	case "$MDEV" in
+      		vd*) symlink_action ../../$MDEV disk/by-id/virtio-''${serial}''${partsuffix};;
+      	esac
+      fi
 
-        # by-label, by-partlabel, by-partuuid, by-uuid symlinks
-        if [ -n "$LABEL" ]; then
-        	mkdir -p disk/by-label
-        	symlink_action ../../$MDEV disk/by-label/"$(blkid_encode_string "$LABEL")"
-        fi
-        if [ -n "$PARTLABEL" ]; then
-        	mkdir -p disk/by-partlabel
-        	symlink_action ../../$MDEV disk/by-partlabel/"$(blkid_encode_string "$PARTLABEL")"
-        fi
-        if [ -n "$PARTUUID" ]; then
-        	mkdir -p disk/by-partuuid
-        	symlink_action ../../$MDEV disk/by-partuuid/"$PARTUUID"
-        fi
-        if [ -n "$UUID" ]; then
-        	mkdir -p disk/by-uuid
-        	symlink_action ../../$MDEV disk/by-uuid/"$UUID"
-        fi
+      # by-label, by-partlabel, by-partuuid, by-uuid symlinks
+      if [ -n "$LABEL" ]; then
+      	mkdir -p disk/by-label
+      	symlink_action ../../$MDEV disk/by-label/"$(blkid_encode_string "$LABEL")"
+      fi
+      if [ -n "$PARTLABEL" ]; then
+      	mkdir -p disk/by-partlabel
+      	symlink_action ../../$MDEV disk/by-partlabel/"$(blkid_encode_string "$PARTLABEL")"
+      fi
+      if [ -n "$PARTUUID" ]; then
+      	mkdir -p disk/by-partuuid
+      	symlink_action ../../$MDEV disk/by-partuuid/"$PARTUUID"
+      fi
+      if [ -n "$UUID" ]; then
+      	mkdir -p disk/by-uuid
+      	symlink_action ../../$MDEV disk/by-uuid/"$UUID"
+      fi
 
-        # backwards compatibility with /dev/usbdisk for /dev/sd*
-        if [ "''${MDEV#sd}" != "$MDEV" ]; then
-        	sysdev=$(readlink $SYSFS/class/block/$MDEV)
-        	case "$sysdev" in
-        		*usb[0-9]*)
-        			# require vfat for devices without partition
-        			if ! [ -e $SYSFS/block/$MDEV ] || [ TYPE="vfat" ]; then
-        				symlink_action $MDEV usbdisk
-        			fi
-        			;;
-        	esac
-        fi
-      '';
-
-      fsInfo = let
-        f = fs: [
-          fs.mountPoint
-          (
-            if fs.device != null
-            then fs.device
-            else "/dev/disk/by-label/${fs.label}"
-          )
-          fs.fsType
-          (builtins.concatStringsSep "," fs.options)
-        ];
-      in
-        pkgs.writeText "initrd-fsinfo" (lib.concatStringsSep "\n" (lib.concatMap f fileSystems));
-
-      setHostId = optionalString (config.networking.hostId != null) ''
-        hi="${config.networking.hostId}"
-        ${
-          if pkgs.stdenv.hostPlatform.isBigEndian
-          then ''
-            echo -ne "\x''${hi:0:2}\x''${hi:2:2}\x''${hi:4:2}\x''${hi:6:2}" > /etc/hostid
-          ''
-          else ''
-            echo -ne "\x''${hi:6:2}\x''${hi:4:2}\x''${hi:2:2}\x''${hi:0:2}" > /etc/hostid
-          ''
-        }
-      '';
-
-      inherit extraUtils dhcpHook modulesClosure;
-
-      inherit (config.boot.initrd) kernelModules;
-      inherit (config.system.build) earlyMountScript;
-    };
-
-    postInstall = ''
-      echo checking syntax
-      # check both with bash
-      ${pkgs.buildPackages.bash}/bin/sh -n $target
-      # and with ash shell, just in case
-      ${pkgs.buildPackages.busybox}/bin/ash -n $target
+      # backwards compatibility with /dev/usbdisk for /dev/sd*
+      if [ "''${MDEV#sd}" != "$MDEV" ]; then
+      	sysdev=$(readlink $SYSFS/class/block/$MDEV)
+      	case "$sysdev" in
+      		*usb[0-9]*)
+      			# require vfat for devices without partition
+      			if ! [ -e $SYSFS/block/$MDEV ] || [ TYPE="vfat" ]; then
+      				symlink_action $MDEV usbdisk
+      			fi
+      			;;
+      	esac
+      fi
     '';
   };
+  postDeviceCommandsFile = pkgs.writeText "post-device-commands" ''
+    ${extraUtils}/bin/ash
+  '';
+
+  bootStage1 = pkgs.writeScript "stage-1-init" ''
+    #!${extraUtils}/bin/ash
+    export extraUtils=${extraUtils}
+    export kernelModules=${lib.escapeShellArg (lib.concatStringsSep " " config.boot.initrd.kernelModules)}
+    export fsInfo=${fsInfo}
+    export earlyMountScript=${config.system.build.earlyMountScript}
+    ${lib.optionalString (config.networking.hostId != null) ''
+      export HOST_ID=${lib.escapeShellArg config.networking.hostId}
+    ''}
+    export postMountCommands=${postDeviceCommandsFile}
+    export DEVICE_MANAGER=mdev
+    export MDEV_CONF=${mdevRules}
+    exec ${extraUtils}/bin/nixos-core stage-1-init
+  '';
 
   initialRamdisk = pkgs.makeInitrd {
     name = "initrd-${kernel-name}";

@@ -1,10 +1,14 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-
+  inputs.oci-tool.url = "github:damitusthyyeetus123/oci-tool";
+  inputs.nixos-core.url = "github:feel-co/nixos-core?ref=notashelf/push-zpuvkpopymtz";
   outputs = {
     self,
     nixpkgs,
-  }: let
+    oci-tool,
+    nixos-core,
+    ...
+  } @ inputs: let
     inherit (self) lib;
 
     forSupportedSystems = lib.genAttrs ["x86_64-linux" "aarch64-linux" "armv7l-linux"];
@@ -19,17 +23,20 @@
     packages = forSupportedSystems (system: {
       iso =
         (lib.microsSystem {
+          specialArgs = {inherit inputs lib;};
           modules = [
             ./micros/modules/profiles/virtualization/iso-image.nix
 
             {
-              nixpkgs.hostPlatform = {inherit system;};
+              nixpkgs.hostPlatform = {
+                inherit system;
+              };
             }
           ];
         }).config.system.build.image;
-
       qemu =
         (lib.microsSystem {
+          specialArgs = {inherit inputs lib;};
           modules = [
             ./micros/modules/profiles/virtualization/qemu-guest.nix
 
@@ -38,6 +45,18 @@
             }
           ];
         }).config.system.build.runvm;
+      lxc = lib.microsSystem {
+        specialArgs = {inherit inputs lib;};
+        modules = [
+          ./micros/modules/profiles/virtualization/lxc-profile.nix
+          {
+            nixpkgs.hostPlatform = {
+              inherit system;
+              config = "x86_64-unknown-linux-musl";
+            };
+          }
+        ];
+      };
     });
 
     legacyPackages = forSupportedSystems (system: let

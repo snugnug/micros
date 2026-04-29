@@ -403,9 +403,9 @@ in {
     boot.supportedFilesystems = map (fs: fs.fsType) fileSystems;
 
     # Add the mount helpers to the system path so that `mount' can find them.
-    system.fsPackages = [pkgs.dosfstools];
+    system.fsPackages = lib.mkIf (config.boot.isContainer == false) [pkgs.dosfstools];
 
-    environment.systemPackages = with pkgs; [fuse3 fuse] ++ config.system.fsPackages;
+    environment.systemPackages = lib.mkIf (config.boot.isContainer == false) (with pkgs; [fuse3 fuse] ++ config.system.fsPackages);
 
     environment.etc.fstab.text = let
       swapOptions = sw:

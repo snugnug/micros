@@ -31,7 +31,7 @@ in {
   };
 
   config = {
-    boot.kernelParams = ["init=${config.system.build.initialRamdisk}/initrd"];
+    boot.kernelParams = ["init=${config.system.build.toplevel}/init"];
     system.build = {
       image = let
         efiDir =
@@ -179,7 +179,7 @@ in {
 
             menuentry 'boot' {
               terminal_output console
-              linux /boot/bzImage console=ttyS0 ${toString config.boot.kernelParams} root=LABEL=micros quiet panic=-1
+              linux /boot/bzImage console=ttyS0 ${toString config.boot.kernelParams} quiet panic=-1
               initrd /boot/initrd
             }
 
@@ -267,7 +267,7 @@ in {
                 LABEL boot
                 MENU LABEL Boot Micros
                 LINUX /boot/bzImage
-                APPEND console=ttyS0 root=LABEL=micros init=${config.system.build.initialRamdisk}/initrd ${toString config.boot.kernelParams}
+                APPEND console=ttyS0 ${toString config.boot.kernelParams}
                 INITRD /boot/initrd
               '';
               target = "/isolinux/isolinux.cfg";
@@ -292,7 +292,7 @@ in {
           usbBootable = true;
           isohybridMbrImage = "${pkgs.syslinux}/share/syslinux/isohdpfx.bin";
           efiBootable = true;
-          efiBootImage = "boot/efi.img";
+          efiBootImage = "/boot/efi.img";
           syslinux = pkgs.syslinux;
         };
 
@@ -300,20 +300,31 @@ in {
       toplevel =
         pkgs.runCommand "micros-toplevel" {
           activationScript = config.system.activationScripts.script;
-        } ''
+        }
+        ''
           mkdir $out
 
           cp ${config.system.build.bootStage2} $out/init
-          substituteInPlace $out/init --subst-var-by systemConfig $out
+          substituteInPlace $out/init --replace-fail REPLACE_WITH_TOPLEVEL $out
+          substituteInPlace $out/init --replace-fail REPLACE_WITH_CONTAINER "${
+            if config.boot.isContainer
+            then "export container=true"
+            else ""
+          }"
           ln -s ${config.system.path} $out/sw
-          ln -s ${kernel} $out/kernel-modules
+
+          ${
+            if !config.boot.isContainer
+            then "ln -s ${kernel} $out/kernel-modules"
+            else ""
+          }
+          touch $out/nixos-version
           echo "$activationScript" > $out/activate
           substituteInPlace $out/activate --subst-var out
           chmod u+x $out/activate
 
           unset activationScript
         '';
-
       squashfs = pkgs.callPackage (pkgs.path + "/nixos/lib/make-squashfs.nix") {
         storeContents = [config.system.build.toplevel];
       };

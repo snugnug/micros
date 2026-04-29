@@ -114,18 +114,20 @@
     "vsock"
   ];
   fileSystems."/" = {
-    device = "none";
+    device = "tmpfs";
     fsType = "tmpfs";
     neededForBoot = true;
   };
   fileSystems."/iso" = {
-    device = "/dev/root";
+    device = "/dev/disk/by-label/micros";
     fsType = "iso9660";
+    options = ["ro"];
     neededForBoot = true;
   };
   fileSystems."/nix/store" = {
     device = "/mnt-root/iso/root.squashfs";
-    fsType = "auto";
+    fsType = "squashfs";
+    options = ["ro"];
     neededForBoot = true;
   };
   services.getty.enable = true;

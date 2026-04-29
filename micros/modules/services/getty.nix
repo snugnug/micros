@@ -19,7 +19,7 @@ in {
     runit.services = {
       getty = {
         runScript = ''
-          #!${pkgs.runtimeShell}
+          #!${pkgs.busybox}/bin/ash
           echo "Starting getty"
           ${pkgs.busybox}/bin/busybox getty -l ${pkgs.shadow}/bin/login 0 /dev/ttyS0
         '';

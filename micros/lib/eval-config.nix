@@ -14,7 +14,6 @@
   # likely to cause breaking changes.
   nixpkgsModules = map (x: "${nixpkgs}/nixos/modules/${x}") [
     "system/etc/etc.nix"
-    "system/activation/activation-script.nix"
     "system/boot/kernel.nix"
     "config/sysctl.nix"
     "misc/nixpkgs.nix"

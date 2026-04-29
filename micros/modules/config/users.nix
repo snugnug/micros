@@ -43,7 +43,7 @@
 
       shell = mkOption {
         type = with types; nullOr (either shellPackage path);
-        default = "/run/current-system/sw/bin/bash";
+        default = "/run/booted-system/sw/bin/ash";
         description = "Account login shell";
       };
 
@@ -82,7 +82,7 @@ in {
     runit.services = {
       user-init = {
         runScript = ''
-          #!${pkgs.runtimeShell}
+          #!${pkgs.busybox}/bin/ash
           # Make home directories
           ${lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "mkdir -p ${value.home}") config.users))}
           ${lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "chown ${toString value.uid}:${toString value.gid} -f -R ${value.home}") config.users))}

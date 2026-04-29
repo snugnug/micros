@@ -13,16 +13,24 @@
     paths = [
       # Join runit with some additional utility scripts
       pkgs.runit
-
-      # Poweroff
-      (pkgs.writeShellScriptBin "poweroff" ''
-        exec runit-init 0
-      '')
-
-      # Reboot
-      (pkgs.writeShellScriptBin "reboot" ''
-        exec runit-init 6
-      '')
+      (pkgs.writeTextFile {
+        name = "poweroff";
+        executable = true;
+        destination = "/bin/poweroff";
+        text = ''
+          #!${pkgs.busybox}/bin/ash
+          exec runit-init 0
+        '';
+      })
+      (pkgs.writeTextFile {
+        name = "reboot";
+        executable = true;
+        destination = "/bin/reboot";
+        text = ''
+          #!${pkgs.busybox}/bin/ash
+          exec runit-init 6
+        '';
+      })
     ];
   };
 
@@ -34,8 +42,8 @@ in {
       stage-1.script = mkOption {
         type = types.lines;
         default = ''
-          #!${pkgs.runtimeShell}
-          PATH=/run/current-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
+          #!${pkgs.busybox}/bin/ash
+          PATH=/run/booted-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
 
           # If /etc/ssh is missing, create it.
           [ ! -d /etc/ssh ] && mkdir -p /etc/ssh
@@ -45,9 +53,13 @@ in {
           ln -s ${config.environment.binsh} /bin/sh
 
           # Bring network interfaces up
-          ifup -v -a -E ${(pkgs.callPackage ../../../../../pkgs/ifupdown-ng.nix {})}/usr/libexec/ifupdown-ng
+          ${
+            if (config.boot.isContainer == false)
+            then "ifup -v -a -E ${(pkgs.ifupdown-ng)}/usr/libexec/ifupdown-ng"
+            else ""
+          }
 
-          ${optionalString (config.networking.timeServers != []) ''
+          ${optionalString (config.networking.timeServers != [] && config.boot.isContainer == false) ''
             # Configure timeservers
             ${pkgs.ntp}/bin/ntpdate ${toString config.networking.timeServers}
           ''}
@@ -63,14 +75,14 @@ in {
       stage-2.script = mkOption {
         type = types.lines;
         default = ''
-          #!${pkgs.runtimeShell}
+          #!${pkgs.busybox}/bin/ash
           cat /proc/uptime
 
           # Watch the /etc/service directory for files
           # used to configure a monitored service.
           mkdir -p /etc/service
 
-          PATH=/run/current-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
+          PATH=/run/booted-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
           exec env - PATH=$PATH ${pkgs.runit}/bin/runsvdir -P /etc/service
         '';
       };
@@ -78,18 +90,18 @@ in {
       stage-3.script = mkOption {
         type = types.lines;
         default = ''
-          #!${pkgs.runtimeShell}
+          #!${pkgs.busybox}/bin/ash
 
           echo Waiting for services to stop...
           ${pkgs.runit}/bin/sv force-stop /etc/service/*
           ${pkgs.runit}/bin/sv exit /etc/service/*
 
           echo Sending TERM signal to processes...
-          ${pkgs.procps}/bin/pkill --inverse -s0,1 -TERM
+          ${pkgs.busybox}/bin/pkill -TERM -v -s 0,1
           sleep 1
 
           echo Sending KILL signal to processes...
-          ${pkgs.procps}/bin/pkill --inverse -s0,1 -KILL
+          ${pkgs.busybox}/bin/pkill -KILL -v -s 0,1
 
           echo Unmounting filesystems, disabling swap...
           swapoff -a

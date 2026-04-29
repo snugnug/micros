@@ -14,7 +14,9 @@
   ./system/boot/stage-1.nix
   ./system/boot/stage-2.nix
   ./system/activation.nix
+  ./system/activation/activation-script.nix
   ./system/build.nix
+  ./system/etc-setup.nix
   ./system/name.nix
 
   ./services/nix-daemon.nix
@@ -25,6 +27,7 @@
   ./tasks/filesystems.nix
 
   ./virtualisation/qemu.nix
+  ./virtualisation/lxc-container.nix
 
   ./environment.nix
   ./networking/networking.nix
