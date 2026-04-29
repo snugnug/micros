@@ -71,6 +71,6 @@
 in {
   system.activationScripts.etc = lib.mkForce (lib.stringAfter ["users"] ''
     echo "setting up /etc..."
-    ${inputs.nixos-core.packages.${pkgs.stdenv.system}.default}/bin/nixos-core setup-etc ${buildEtc}/etc
+    ${pkgs.nixos-core}/bin/nixos-core setup-etc ${buildEtc}/etc
   '');
 }

@@ -1,4 +1,4 @@
-{
+{inputs, ...}: {
   nixpkgs.overlays = [
     (_final: prev: {
       dhcpcd = prev.dhcpcd.override {withUdev = false;};
@@ -10,6 +10,7 @@
         systemdSupport = false;
       };
       ifupdown-ng = prev.callPackage ../../pkgs/ifupdown-ng.nix {};
+      nixos-core = inputs.nixos-core.packages.${prev.stdenv.system}.default;
     })
   ];
 }

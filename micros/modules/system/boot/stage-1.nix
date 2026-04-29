@@ -112,7 +112,7 @@
         copy_bin_and_libs $BIN
       done
 
-      for BIN in ${inputs.nixos-core.packages.${pkgs.stdenv.system}.default}/{s,}bin/*; do
+      for BIN in ${pkgs.nixos-core}/{s,}bin/*; do
         copy_bin_and_libs $BIN
       done
 

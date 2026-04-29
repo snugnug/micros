@@ -11,11 +11,11 @@
       name = "stage-2-init";
       text = ''
         #! ${pkgs.busybox}/bin/ash
-        export PATH="${lib.makeBinPath [pkgs.busybox inputs.nixos-core.packages.${pkgs.stdenv.system}.default]}"
+        export PATH="${lib.makeBinPath [pkgs.busybox pkgs.nixos-core]}"
         export SYSTEMD_EXECUTABLE=${pkgs.runit}/bin/runit
         export STAGE2_PATH=/run/booted-system/sw/bin
         REPLACE_WITH_CONTAINER
-        exec ${inputs.nixos-core.packages.${pkgs.stdenv.system}.default}/bin/nixos-core stage-2-init --system-config REPLACE_WITH_TOPLEVEL
+        exec ${pkgs.nixos-core}/bin/nixos-core stage-2-init --system-config REPLACE_WITH_TOPLEVEL
       '';
     };
 
