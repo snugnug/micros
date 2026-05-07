@@ -61,7 +61,7 @@ in {
 
           ${optionalString (config.networking.timeServers != [] && config.boot.isContainer == false) ''
             # Configure timeservers
-            ${pkgs.ntp}/bin/ntpdate ${toString config.networking.timeServers}
+            ${pkgs.chrony}/bin/chronyd -q ${lib.concatMapStrings (x: "'server ${x} iburst '") config.networking.timeServers}
           ''}
 
           # disable DPMS on tty's

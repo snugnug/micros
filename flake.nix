@@ -1,7 +1,13 @@
 {
   inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-  inputs.oci-tool.url = "github:damitusthyyeetus123/oci-tool";
-  inputs.nixos-core.url = "github:feel-co/nixos-core?ref=notashelf/push-zpuvkpopymtz";
+  inputs.oci-tool = {
+    url = "github:damitusthyyeetus123/oci-tool";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
+  inputs.nixos-core = {
+    url = "github:feel-co/nixos-core";
+    inputs.nixpkgs.follows = "nixpkgs";
+  };
   outputs = {
     self,
     nixpkgs,
@@ -22,18 +28,19 @@
 
     packages = forSupportedSystems (system: {
       iso =
-        (lib.microsSystem {
-          specialArgs = {inherit inputs lib;};
-          modules = [
-            ./micros/modules/profiles/virtualization/iso-image.nix
+        (lib.microsSystem
+          {
+            specialArgs = {inherit inputs lib;};
+            modules = [
+              ./micros/modules/profiles/virtualization/iso-image.nix
 
-            {
-              nixpkgs.hostPlatform = {
-                inherit system;
-              };
-            }
-          ];
-        }).config.system.build.image;
+              {
+                nixpkgs.hostPlatform = {
+                  inherit system;
+                };
+              }
+            ];
+          }).config.system.build.image;
       qemu =
         (lib.microsSystem {
           specialArgs = {inherit inputs lib;};

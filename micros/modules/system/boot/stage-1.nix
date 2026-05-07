@@ -13,7 +13,7 @@
 
   # Determine the set of modules that we need to mount the root FS.
   modulesClosure = pkgs.makeModulesClosure {
-    kernel = config.system.build.kernel;
+    kernel = config.system.modulesTree;
     firmware = config.hardware.firmware;
     rootModules = config.boot.initrd.availableKernelModules ++ config.boot.initrd.kernelModules;
     allowMissing = false;

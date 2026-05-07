@@ -6,11 +6,15 @@
       pcslite = prev.pcslite.override {systemdSupport = false;};
       openssh = prev.openssh.override {withFIDO = false;};
       util-linux = prev.util-linux.override {
-        systemd = null;
         systemdSupport = false;
       };
       ifupdown-ng = prev.callPackage ../../pkgs/ifupdown-ng.nix {};
-      nixos-core = inputs.nixos-core.packages.${prev.stdenv.system}.default;
+      nixos-core = inputs.nixos-core.packages.${prev.stdenv.system}.default.override {
+        rustPlatform =
+          if prev.stdenv.hostPlatform.isMusl
+          then prev.pkgsMusl.rustPlatform
+          else prev.rustPlatform;
+      };
     })
   ];
 }

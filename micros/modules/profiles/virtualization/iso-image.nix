@@ -85,8 +85,6 @@
     "usb_f_mass_storage"
     "g_mass_storage"
     "libcomposite"
-    "mv_udc"
-    "gr_udc"
     "sd_mod"
     # SD cards.
     "sdhci_pci"
