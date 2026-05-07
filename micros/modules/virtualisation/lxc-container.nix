@@ -2,7 +2,7 @@
   config,
   pkgs,
   lib,
-  inputs,
+  oci-tool,
   ...
 }: let
   inherit (lib.options) mkOption;
@@ -50,7 +50,7 @@ in {
       }:
         pkgs.stdenvNoCC.mkDerivation {
           name = "${imageName}-oci";
-          buildInputs = [pkgs.gnutar pkgs.coreutils inputs.oci-tool.legacyPackages.x86_64-linux.default];
+          buildInputs = [pkgs.gnutar pkgs.coreutils oci-tool.legacyPackages.${pkgs.stdenv.system}.default];
           buildCommand = ''
             layers=""
             for i in $(< ${closure}/store-paths); do

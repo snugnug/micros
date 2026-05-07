@@ -1,4 +1,4 @@
-{inputs, ...}: {
+{nixos-core, ...}: {
   nixpkgs.overlays = [
     (_final: prev: {
       dhcpcd = prev.dhcpcd.override {withUdev = false;};
@@ -9,7 +9,7 @@
         systemdSupport = false;
       };
       ifupdown-ng = prev.callPackage ../../pkgs/ifupdown-ng.nix {};
-      nixos-core = inputs.nixos-core.packages.${prev.stdenv.system}.default.override {
+      nixos-core = nixos-core.packages.${prev.stdenv.system}.default.override {
         rustPlatform =
           if prev.stdenv.hostPlatform.isMusl
           then prev.pkgsMusl.rustPlatform

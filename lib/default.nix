@@ -1,6 +1,8 @@
 {
   nixpkgs,
   micros-lib,
+  oci-tool,
+  nixos-core,
   ...
 }:
 nixpkgs.lib.extend (_: _: {
@@ -13,6 +15,12 @@ nixpkgs.lib.extend (_: _: {
         # We set it to null, to remove the "legacy" entrypoint's
         # non-hermetic default.
         system = null;
+
+        specialArgs =
+          args.specialArgs
+          // {
+            inherit nixos-core oci-tool;
+          };
 
         modules =
           args.modules
@@ -28,6 +36,6 @@ nixpkgs.lib.extend (_: _: {
             })
           ];
       }
-      // builtins.removeAttrs args ["modules"]
+      // builtins.removeAttrs args ["modules" "specialArgs"]
     );
 })

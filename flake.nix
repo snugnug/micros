@@ -76,7 +76,7 @@
     # Primarily designed to expose `microsSystem` as, e.g., inputs.micros.lib.microsSystem
     # for when you are building non-supported platforms on your own accord.
     lib = import ./lib {
-      inherit nixpkgs;
+      inherit nixpkgs nixos-core oci-tool;
 
       micros-lib = ./micros/lib/eval-config.nix;
     };
