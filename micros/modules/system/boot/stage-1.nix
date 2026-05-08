@@ -444,9 +444,6 @@
       fi
     '';
   };
-  postDeviceCommandsFile = pkgs.writeText "post-device-commands" ''
-    ${extraUtils}/bin/ash
-  '';
 
   bootStage1 = pkgs.writeScript "stage-1-init" ''
     #!${extraUtils}/bin/ash
@@ -457,7 +454,6 @@
     ${lib.optionalString (config.networking.hostId != null) ''
       export HOST_ID=${lib.escapeShellArg config.networking.hostId}
     ''}
-    export postMountCommands=${postDeviceCommandsFile}
     export DEVICE_MANAGER=mdev
     export MDEV_CONF=${mdevRules}
     exec ${extraUtils}/bin/nixos-core stage-1-init
