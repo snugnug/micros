@@ -1,5 +1,6 @@
 {
   config,
+  pkgs,
   lib,
   ...
 }: let
@@ -167,6 +168,9 @@ in {
       hostname = mkIf (config.networking.hostName != "") {
         text = config.networking.hostName + "\n";
       };
+      "ssl/certs/ca-certificates.crt".source = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+      "ssl/certs/ca-bundle.crt".source = "${pkgs.cacert}/etc/ssl/certs/ca-bundle.crt";
+
       "resolv.conf".text = ''${lib.strings.concatLines (lib.lists.forEach config.networking.nameservers (
           x: ''
             nameserver ${x}
