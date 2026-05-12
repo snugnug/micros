@@ -43,9 +43,9 @@
           default = null;
         };
         gateway = mkOption {
-          type = with types; nullOr (strMatching "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])/([1-9]|[1-2][0-9]|3[0-2])$");
+          type = with types; nullOr (strMatching "^((25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])\.){3}(25[0-5]|2[0-4][0-9]|1[0-9][0-9]|[1-9]?[0-9])$");
           description = ''
-            IPV4 address used as the network gateway. Given as "x.x.x.x/xx".
+            IPV4 address used as the network gateway. Given as "x.x.x.x".
           '';
           default = null;
         };

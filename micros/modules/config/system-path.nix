@@ -12,6 +12,7 @@ let
 
   requiredPackagesMinimal = map (pkg: lib.setPrio ((pkg.meta.priority or lib.meta.defaultPriority) + 3) pkg) [
     pkgs.busybox
+    pkgs.nss-cacert
   ];
   requiredPackages = map (pkg: lib.setPrio ((pkg.meta.priority or lib.meta.defaultPriority) + 3) pkg) [
     pkgs.util-linuxMinimal
@@ -20,6 +21,7 @@ let
     pkgs.iproute2
     pkgs.iputils
     pkgs.procps
+    pkgs.nss-cacert
     pkgs.bashInteractive
     pkgs.kmod
     pkgs.dhcpcd
