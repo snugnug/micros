@@ -37,7 +37,7 @@
 
       password = mkOption {
         type = types.str;
-        default = "x";
+        default = "!";
         description = "Hashed account password";
       };
 
@@ -69,13 +69,8 @@ in {
     users = {
       root = {
         uid = 0;
-        password = "";
+        password = "!";
         home = "/root";
-      };
-
-      micros = {
-        uid = 1000;
-        password = "";
       };
     };
 
@@ -93,7 +88,8 @@ in {
 
     environment.etc = mkMerge [
       {
-        passwd.text = lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "${name}:${value.password}:${toString value.uid}:${toString value.gid}::${value.home}:${value.shell}") config.users));
+        passwd.text = lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "${name}:x:${toString value.uid}:${toString value.gid}::${value.home}:${value.shell}") config.users));
+        shadow.text = lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "${name}:${value.password}:1::::::") config.users));
       }
 
       (lib.mapAttrs' (_: {
