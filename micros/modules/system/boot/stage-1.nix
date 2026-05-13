@@ -117,7 +117,7 @@
       done
 
       # Copy ld manually since it isn't detected correctly
-      cp -pv ${pkgs.glibc.out}/lib/ld*.so.? $out/lib
+      cp -pv ${pkgs.stdenv.cc.libc.out}/lib/ld*.so.? $out/lib
 
       # Copy all of the needed libraries in a consistent order so
       find $out/bin $out/lib -type f | sort | while read BIN; do
