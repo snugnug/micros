@@ -269,6 +269,7 @@ in {
     # TODO: Add blacklistedKernelModules to block ip_tables module when using nftables
     # boot.blacklistedKernelModules = ["ip_tables"];
     environment.systemPackages = [pkgs.nftables];
+    networking.nftables.checkRuleset = ! (pkgs.stdenv.hostPlatform.isMusl);
     runit.services = {
       nftables = let
         enabledTables = lib.filterAttrs (_: table: table.enable) cfg.tables;
