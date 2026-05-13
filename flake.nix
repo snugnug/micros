@@ -67,7 +67,7 @@
     });
 
     legacyPackages = forSupportedSystems (system: let
-      pkgs = pkgsFor.${system};
+      pkgs = pkgsFor system;
     in {
       ifupdown-ng = pkgs.callPackage ./pkgs/ifupdown-ng.nix {};
     });

@@ -344,7 +344,7 @@ in {
       in {
         name = "nftables";
         runScript = ''
-          #!${pkgs.runtimeShell}
+          #!${pkgs.busybox}/bin/ash
           mkdir /var/lib/nftables
           ${ensureDeletions}
           ${rulesScript}

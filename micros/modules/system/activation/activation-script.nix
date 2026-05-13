@@ -60,7 +60,7 @@
         getent
         stdenv.cc.libc # nscd in update-users-groups.pl
         shadow
-        util-linux # needed for mount and mountpoint
+        util-linuxMinimal # needed for mount and mountpoint
       ]))
     else (with pkgs; map getBin [busybox]);
   scriptType = let

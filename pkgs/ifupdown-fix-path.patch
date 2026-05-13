@@ -1,7 +1,32 @@
-diff --git a/executor-scripts/linux/dhcp b/executor-scripts/linux/dhcp
-index aff637b..feb6673 100755
---- a/executor-scripts/linux/dhcp
-+++ b/executor-scripts/linux/dhcp
+diff --git a/Makefile b/Makefile
+index 58d85c2..d570b87 100644
+--- a/Makefile
++++ b/Makefile
+@@ -1,7 +1,7 @@
+ LAYOUT ?= linux
+ SCDOC := scdoc
+-LIBMNL_CFLAGS ?= $(shell pkg-config --cflags --static libmnl)
+-LIBMNL_LIBS ?= $(shell pkg-config --libs --static libmnl)
++LIBMNL_CFLAGS ?= $(shell pkg-config --cflags libmnl)
++LIBMNL_LIBS ?= $(shell pkg-config --libs libmnl)
+ LIBBSD_CFLAGS =
+ LIBBSD_LIBS =
+ 
+@@ -155,8 +155,8 @@ TARGET_LIBS = ${LIBIFUPDOWN_LIB}
+ TARGET_LIBS_PREFIXED = $(addprefix ${BUILDDIR_},${TARGET_LIBS})
+ TARGET_EXECUTOR_LIBS = ${LIBIFUPDOWN_EXECUTOR_LIB} ${LIBIFUPDOWN_LIB}
+ TARGET_EXECUTOR_LIBS_PREFIXED = $(addprefix ${BUILDDIR_},${TARGET_EXECUTOR_LIBS})
+-LIBS += -static ${TARGET_LIBS_PREFIXED} ${LIBBSD_LIBS}
+-EXECUTOR_LIBS += -static ${TARGET_EXECUTOR_LIBS_PREFIXED} ${LIBBSD_LIBS} ${LIBMNL_LIBS}
++LIBS += ${TARGET_LIBS_PREFIXED} ${LIBBSD_LIBS}
++EXECUTOR_LIBS += ${TARGET_EXECUTOR_LIBS_PREFIXED} ${LIBBSD_LIBS} ${LIBMNL_LIBS}
+ 
+ EXECUTOR_SCRIPTS_NATIVE_STATIC_SRC = \
+ 	executors/linux-native/static.c
+diff --git a/executors/linux/dhcp b/executors/linux/dhcp
+index aff637b..1a73f1a 100755
+--- a/executors/linux/dhcp
++++ b/executors/linux/dhcp
 @@ -21,13 +21,13 @@ start() {
  		[ -n "$IF_DHCP_LEASETIME" ] && optargs="$optargs -l $IF_DHCP_LEASETIME"
  		[ -n "$IF_DHCP_CONFIG" ] && optargs="$optargs -f $IF_DHCP_CONFIG"
@@ -27,10 +52,19 @@ index aff637b..feb6673 100755
  		;;
  	*)
  		;;
-diff --git a/executor-scripts/linux/vrf b/executor-scripts/linux/vrf
-index ac3668a..3803996 100755
---- a/executor-scripts/linux/vrf
-+++ b/executor-scripts/linux/vrf
+@@ -46,7 +46,7 @@ start() {
+ stop() {
+ 	case "$1" in
+ 	dhcpcd)
+-		${MOCK} /sbin/dhcpcd -k $IFACE
++		${MOCK} dhcpcd -k $IFACE
+ 		;;
+ 	dhclient)
+ 		${MOCK} kill -9 $(cat /var/run/dhclient.$IFACE.pid) 2>/dev/null
+diff --git a/executors/linux/vrf b/executors/linux/vrf
+index 24b7112..b029662 100755
+--- a/executors/linux/vrf
++++ b/executors/linux/vrf
 @@ -11,19 +11,19 @@ kernel_version_48() {
  }
  
@@ -56,10 +90,10 @@ index ac3668a..3803996 100755
  }
  
  [ -n "$VERBOSE" ] && set -x
-diff --git a/executor-scripts/linux/wifi b/executor-scripts/linux/wifi
+diff --git a/executors/linux/wifi b/executors/linux/wifi
 index 398c2ac..8cce340 100755
---- a/executor-scripts/linux/wifi
-+++ b/executor-scripts/linux/wifi
+--- a/executors/linux/wifi
++++ b/executors/linux/wifi
 @@ -46,7 +46,7 @@ generate_config() {
  	[ -z "$IF_WIFI_SSID" ] && die "wifi-ssid not set"
  	[ -z "$IF_WIFI_PSK" ] && die "wifi-psk not set"
@@ -91,14 +125,15 @@ index 398c2ac..8cce340 100755
  }
  
 diff --git a/libifupdown/lifecycle.c b/libifupdown/lifecycle.c
-index 8bc9526..998c8ee 100644
+index dc831fc..c547494 100644
 --- a/libifupdown/lifecycle.c
 +++ b/libifupdown/lifecycle.c
-@@ -166,7 +166,7 @@ build_environment(char **envp[], const struct lif_execute_opts *opts, const stru
+@@ -165,7 +165,7 @@ build_environment(char **envp[], const struct lif_execute_opts *opts, const stru
+ 		lifname = iface->ifname;
  
  	/* Use sane defaults for PATH */
- 	if (geteuid() == 0)
--		lif_environment_push(envp, "PATH", _PATH_STDPATH);
-+		lif_environment_push(envp, "PATH", getenv("PATH"));
- 	else
- 		lif_environment_push(envp, "PATH", _PATH_DEFPATH);
+-	lif_environment_push(envp, "PATH", _PATH_STDPATH);
++	lif_environment_push(envp, "PATH", getenv("PATH"));
+ 	lif_environment_push(envp, "IFACE", lifname);
+ 	lif_environment_push(envp, "PHASE", phase);
+ 	lif_environment_push(envp, "MODE", mode);

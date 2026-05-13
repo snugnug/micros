@@ -9,6 +9,7 @@
         systemdSupport = false;
       };
       ifupdown-ng = prev.callPackage ../../pkgs/ifupdown-ng.nix {};
+      ifupdown-ng-minimal = prev.callPackage ../../pkgs/ifupdown-ng.nix {isMinimal = true;};
       nixos-core = nixos-core.packages.${prev.stdenv.system}.default.override {
         rustPlatform =
           if prev.stdenv.hostPlatform.isMusl

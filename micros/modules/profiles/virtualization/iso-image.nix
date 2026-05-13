@@ -128,7 +128,6 @@
     options = ["ro"];
     neededForBoot = true;
   };
-  services.getty.enable = true;
   networking.interfaces = [
     {
       name = "eth0";
@@ -137,5 +136,4 @@
   networking.firewall.allowedTCPPorts = [22];
   networking.firewall.enable = true;
   networking.nftables.enable = true;
-  services.sshd.enable = true;
 }

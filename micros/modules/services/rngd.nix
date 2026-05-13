@@ -19,7 +19,7 @@ in {
     runit.services = {
       rngd = {
         runScript = ''
-          #!${pkgs.runtimeShell}
+          #!${pkgs.busybox}/bin/ash
           export PATH=$PATH:${lib.makeBinPath cfg.package}
 
           echo "Starting rngd"

@@ -69,7 +69,7 @@ in {
     runit.services = {
       sshd = {
         runScript = ''
-          #!${pkgs.runtimeShell}
+          #!${pkgs.busybox}/bin/ash
           echo "Generating Host Keys"
           ${lib.strings.concatLines (
             lib.lists.forEach config.services.sshd.hostKeys (value: ''

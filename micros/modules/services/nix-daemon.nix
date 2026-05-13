@@ -19,7 +19,7 @@ in {
     runit.services = {
       nix-daemon = {
         runScript = ''
-          #!${pkgs.runtimeShell}
+          #!${pkgs.busybox}/bin/ash
 
           echo "Starting nix-daemon"
           ${cfg.package}/bin/nix-daemon

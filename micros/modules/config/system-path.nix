@@ -17,13 +17,11 @@ let
     pkgs.util-linuxMinimal
     pkgs.busybox
     pkgs.coreutils
-    pkgs.iproute2
     pkgs.iputils
     pkgs.procps
-    pkgs.bashInteractive
     pkgs.kmod
     pkgs.dhcpcd
-    (pkgs.callPackage ../../../pkgs/ifupdown-ng.nix {})
+    pkgs.ifupdown-ng-minimal
   ];
 in {
   options = {
