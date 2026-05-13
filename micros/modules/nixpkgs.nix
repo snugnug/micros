@@ -16,6 +16,12 @@
           then prev.pkgsMusl.rustPlatform
           else prev.rustPlatform;
       };
+      libfaketime = prev.libfaketime.overrideAttrs (finalAttrs: previousAttrs: {
+        doCheck =
+          if prev.stdenv.hostPlatform.isMusl
+          then false
+          else true;
+      });
     })
   ];
 }

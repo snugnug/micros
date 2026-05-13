@@ -21,13 +21,18 @@ stdenv.mkDerivation {
     hash = "sha256-+M8c59LjJlO1Vdl+Lo5EXjMEaHWemGWvBsDw/MaY/IE=";
   };
   nativeBuildInputs = [pkg-config libmnl];
-  buildInputs = [libbsd] ++ lib.optionals isMinimal [iproute2];
+  buildInputs = lib.optionals (! (stdenv.hostPlatform.isMusl)) [libbsd] ++ lib.optionals isMinimal [iproute2];
   patches = [
     ./ifupdown-fix-path.patch
   ];
-  buildPhase = ''
-    make LIBBSD_CFLAGS="$(pkg-config --cflags libbsd-overlay)" LIBBSD_LIBS="$(pkg-config --cflags --libs libbsd-overlay)"
-  '';
+  buildPhase =
+    if stdenv.hostPlatform.isMusl
+    then ''
+      make
+    ''
+    else ''
+      make LIBBSD_CFLAGS="$(pkg-config --cflags libbsd-overlay)" LIBBSD_LIBS="$(pkg-config --cflags --libs libbsd-overlay)"
+    '';
   installPhase = let
     minimalExecutors = ["bond" "bridge" "dhcp" "forward" "ipv6" "ipv6-ra" "ipv6-tempaddr" "link" "static"];
   in ''
