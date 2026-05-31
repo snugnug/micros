@@ -74,14 +74,14 @@ in {
       };
     };
 
-    runit.services = {
+    micros.services = {
       user-init = {
-        runScript = ''
+        type = "oneshot";
+        startScript = ''
           #!${pkgs.busybox}/bin/ash
           # Make home directories
           ${lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "mkdir -p ${value.home}") config.users))}
           ${lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "chown ${toString value.uid}:${toString value.gid} -f -R ${value.home}") config.users))}
-          exec ${pkgs.runit}/bin/sv pause /etc/service/user-init
         '';
       };
     };

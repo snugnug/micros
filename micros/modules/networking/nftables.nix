@@ -270,7 +270,7 @@ in {
     # boot.blacklistedKernelModules = ["ip_tables"];
     environment.systemPackages = [pkgs.nftables];
     networking.nftables.checkRuleset = ! (pkgs.stdenv.hostPlatform.isMusl);
-    runit.services = {
+    micros.services = {
       nftables = let
         enabledTables = lib.filterAttrs (_: table: table.enable) cfg.tables;
         deletionsScript = pkgs.writeScript "nftables-deletions" ''
@@ -344,13 +344,13 @@ in {
         };
       in {
         name = "nftables";
-        runScript = ''
+        type = "oneshot";
+        startScript = ''
           #!${pkgs.busybox}/bin/ash
           mkdir /var/lib/nftables
           ${ensureDeletions}
           ${rulesScript}
           ${saveDeletionsScript}
-          exec sv down /etc/service/nftables
         '';
       };
     };

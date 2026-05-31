@@ -66,9 +66,9 @@ in {
   };
 
   config = mkIf cfg.enable {
-    runit.services = {
+    micros.services = {
       sshd = {
-        runScript = ''
+        startScript = ''
           #!${pkgs.busybox}/bin/ash
           echo "Generating Host Keys"
           ${lib.strings.concatLines (
