@@ -26,45 +26,50 @@
     # specific systems.
     # hydraJobs = self.packages;
 
-    packages = forSupportedSystems (system: {
-      iso =
-        (lib.microsSystem
-          {
+    packages = forSupportedSystems (system:
+      {
+        qemu =
+          (lib.microsSystem {
             specialArgs = {inherit inputs lib;};
             modules = [
-              ./micros/modules/profiles/virtualization/iso-image.nix
+              ./micros/modules/profiles/virtualization/qemu-guest.nix
 
+              {
+                nixpkgs.hostPlatform = {inherit system;};
+              }
+            ];
+          }).config.system.build.runvm;
+      }
+      // lib.optionalAttrs (system == "x86_64-linux") {
+        lxc =
+          (lib.microsSystem {
+            specialArgs = {inherit inputs lib;};
+            modules = [
+              ./micros/modules/profiles/virtualization/lxc-profile.nix
               {
                 nixpkgs.hostPlatform = {
                   inherit system;
+                  config = "x86_64-unknown-linux-musl";
                 };
               }
             ];
-          }).config.system.build.image;
-      qemu =
-        (lib.microsSystem {
-          specialArgs = {inherit inputs lib;};
-          modules = [
-            ./micros/modules/profiles/virtualization/qemu-guest.nix
+          }).config.system.build.ociImage;
 
+        iso =
+          (lib.microsSystem
             {
-              nixpkgs.hostPlatform = {inherit system;};
-            }
-          ];
-        }).config.system.build.runvm;
-      lxc = lib.microsSystem {
-        specialArgs = {inherit inputs lib;};
-        modules = [
-          ./micros/modules/profiles/virtualization/lxc-profile.nix
-          {
-            nixpkgs.hostPlatform = {
-              inherit system;
-              config = "x86_64-unknown-linux-musl";
-            };
-          }
-        ];
-      };
-    });
+              specialArgs = {inherit inputs lib;};
+              modules = [
+                ./micros/modules/profiles/virtualization/iso-image.nix
+
+                {
+                  nixpkgs.hostPlatform = {
+                    inherit system;
+                  };
+                }
+              ];
+            }).config.system.build.image;
+      });
 
     legacyPackages = forSupportedSystems (system: let
       pkgs = pkgsFor system;
