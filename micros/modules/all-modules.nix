@@ -10,6 +10,7 @@
   ./system/boot/runit/stages.nix
   ./system/boot/containers.nix
   ./system/boot/getty.nix
+  ./system/boot/init.nix
   ./system/boot/kernel.nix
   ./system/boot/stage-1.nix
   ./system/boot/stage-2.nix
@@ -18,6 +19,7 @@
   ./system/build.nix
   ./system/etc-setup.nix
   ./system/name.nix
+  ./system/services.nix
 
   ./services/nix-daemon.nix
   ./services/getty.nix

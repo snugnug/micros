@@ -68,6 +68,22 @@
       {name = mkDefault name;}
     ];
   });
+
+  genericServices = lib.mapAttrs (_: value: {
+    inherit (value) enable name finishScript confScript;
+    runScript =
+      if value.startScript == null
+      then null
+      else if value.type == "oneshot"
+      then ''
+        ${value.startScript}
+        # Runit will restart an exited run script unless the service is marked down.
+        exec ${pkgs.runit}/bin/sv down /etc/service/${value.name}
+      ''
+      else value.startScript;
+  }) config.micros.services;
+
+  runitServices = genericServices // config.runit.services;
 in {
   options = {
     runit.services = mkOption {
@@ -76,38 +92,52 @@ in {
     };
   };
 
-  config = {
-    environment.etc = mkMerge [
-      (mapAttrs' (name: value: {
-          inherit (value) enable;
-          name = "service/${name}/run";
-          value = mkIf (value.runScript != null) {
-            text = ''${value.runScript}'';
-            mode = "0755";
-          };
-        })
-        config.runit.services)
+  config = mkMerge [
+    {
+      assertions = [
+        {
+          assertion = config.boot.init.system == "runit" || config.runit.services == {};
+          message = ''
+            runit.services is set, but boot.init.system is "${config.boot.init.system}".
+            Use micros.services for backend-agnostic services or select the runit backend.
+          '';
+        }
+      ];
+    }
 
-      (mapAttrs' (name: value: {
-          inherit (value) enable;
-          name = "service/${name}/finish";
+    (mkIf (config.boot.init.system == "runit") {
+      environment.etc = mkMerge [
+        (mapAttrs' (name: value: {
+            inherit (value) enable;
+            name = "service/${name}/run";
+            value = mkIf (value.runScript != null) {
+              text = ''${value.runScript}'';
+              mode = "0755";
+            };
+          })
+          runitServices)
 
-          value = mkIf (value.finishScript != null) {
-            text = ''${value.finishScript}'';
-            mode = "0755";
-          };
-        })
-        config.runit.services)
+        (mapAttrs' (name: value: {
+            inherit (value) enable;
+            name = "service/${name}/finish";
 
-      (mapAttrs' (name: value: {
-          inherit (value) enable;
-          name = "service/${name}/conf";
-          value = mkIf (value.confScript != null) {
-            text = ''${value.confScript}'';
-            mode = "0755";
-          };
-        })
-        config.runit.services)
-    ];
-  };
+            value = mkIf (value.finishScript != null) {
+              text = ''${value.finishScript}'';
+              mode = "0755";
+            };
+          })
+          runitServices)
+
+        (mapAttrs' (name: value: {
+            inherit (value) enable;
+            name = "service/${name}/conf";
+            value = mkIf (value.confScript != null) {
+              text = ''${value.confScript}'';
+              mode = "0755";
+            };
+          })
+          runitServices)
+      ];
+    })
+  ];
 }
