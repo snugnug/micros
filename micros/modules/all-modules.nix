@@ -6,8 +6,7 @@
 
   ./security/pam.nix
 
-  ./system/boot/runit/services.nix
-  ./system/boot/runit/stages.nix
+  ./system/boot/runit/backend.nix
   ./system/boot/containers.nix
   ./system/boot/getty.nix
   ./system/boot/init.nix
