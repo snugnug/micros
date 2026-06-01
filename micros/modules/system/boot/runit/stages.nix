@@ -5,7 +5,7 @@
   ...
 }: let
   inherit (lib) mkOption mkPackageOption;
-  inherit (lib) optionalString;
+  inherit (lib) mkIf optionalString;
   inherit (lib) types;
 
   runit-compat = pkgs.symlinkJoin {
@@ -115,7 +115,8 @@ in {
     };
   };
 
-  config = {
+  config = mkIf (config.boot.init.system == "runit") {
+    boot.init.backendAvailable = true;
     environment.systemPackages = [runit-compat];
     environment.etc = {
       # Runit has three stages: booting, running and shutdown in runit/ 1,2 and 3 respectively.

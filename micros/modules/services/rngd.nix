@@ -4,9 +4,9 @@
   lib,
   ...
 }: let
-  inherit (lib) mkIf mkOption mkPackageOption mkEnableOption;
+  inherit (lib) mkIf mkPackageOption mkEnableOption;
 
-  cfg = config.services.nix-daemon;
+  cfg = config.services.rngd;
 in {
   options = {
     services.rngd = {
@@ -16,9 +16,9 @@ in {
   };
 
   config = mkIf cfg.enable {
-    runit.services = {
+    micros.services = {
       rngd = {
-        runScript = ''
+        startScript = ''
           #!${pkgs.busybox}/bin/ash
           export PATH=$PATH:${lib.makeBinPath cfg.package}
 

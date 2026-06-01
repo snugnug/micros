@@ -4,11 +4,10 @@ MicrOS is a small, experimental operating system designed for embedded
 situations. It is based heavily on NixOS, but compiles down to a microscopic
 kernel[^1], an initrd and a ~50mb squashfs.
 
-[Runit](https://smarden.org/runit/) is used instead of systemd, with some degree
-of abstraction over services. This is not as robust as NixOS systemd module, nor
-is it in any way portable (i.e., additional init systems are not yet possible)
-but it results in a small and fast image for low-resource scenarios, e.g.,
-embedded development.
+[Runit](https://smarden.org/runit/) is the default init backend, with a small
+init-agnostic service interface layered over it. This is not as robust as the
+NixOS systemd module, but it results in a small and fast image for low-resource
+scenarios, e.g., embedded development.
 
 ## Why
 
@@ -52,6 +51,12 @@ lib.microsSystem {
 Above configuration enough to construct a basic system. You may build different
 components of the configuration, available under `config.system.build` to create
 different build artifacts for different workflows.
+
+## Init systems
+
+MicrOS hands PID 1 off to the selected init backend after stage 2 activation.
+`runit` is the default backend. Service modules should use `micros.services`;
+the backend translates those services into whatever layout it needs.
 
 ## Contributing
 

@@ -4,7 +4,7 @@
   lib,
   ...
 }: let
-  inherit (lib) mkIf mkOption mkPackageOption mkEnableOption;
+  inherit (lib) mkIf mkPackageOption mkEnableOption;
 
   cfg = config.services.nix-daemon;
 in {
@@ -16,9 +16,9 @@ in {
   };
 
   config = mkIf cfg.enable {
-    runit.services = {
+    micros.services = {
       nix-daemon = {
-        runScript = ''
+        startScript = ''
           #!${pkgs.busybox}/bin/ash
 
           echo "Starting nix-daemon"

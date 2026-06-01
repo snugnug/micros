@@ -16,9 +16,9 @@ in {
 
   config = mkIf cfg.enable {
     security.pam.enable = true;
-    runit.services = {
+    micros.services = {
       getty = {
-        runScript = ''
+        startScript = ''
           #!${pkgs.busybox}/bin/ash
           echo "Starting getty"
           ${pkgs.busybox}/bin/busybox getty -l ${pkgs.shadow}/bin/login 0 /dev/ttyS0
