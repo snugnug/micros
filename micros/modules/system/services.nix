@@ -32,6 +32,13 @@
           Whether this service should be supervised continuously or run once.
         '';
       };
+      dependencies = mkOption {
+        type = types.listOf types.str;
+        default = [];
+        description = ''
+          Other services to depend on. If they are not running, start them prior to starting this service.
+        '';
+      };
 
       startScript = mkOption {
         type = types.nullOr types.lines;

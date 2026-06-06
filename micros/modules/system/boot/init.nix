@@ -151,6 +151,13 @@
           Function which takes config.micros.services as an input and outputs files to be appended to environment.etc.
         '';
       };
+      supportedFeatures = mkOption {
+        type = types.listOf types.enum ["dependencies"];
+        default = [];
+        description = ''
+          Extra features offered by the init backend, e.g. dependency management
+        '';
+      };
       extraFiles = mkOption {
         type = etcSubmodule;
         default = [];
