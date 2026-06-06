@@ -290,14 +290,6 @@ in {
   config = lib.mkIf cfg.enable {
     assertions = [
       {
-        assertion = cfg.extraCommands == "";
-        message = "extraCommands is incompatible with the nftables based firewall: ${cfg.extraCommands}";
-      }
-      {
-        assertion = cfg.extraStopCommands == "";
-        message = "extraStopCommands is incompatible with the nftables based firewall: ${cfg.extraStopCommands}";
-      }
-      {
         assertion = cfg.pingLimit == null || !(lib.hasPrefix "--" cfg.pingLimit);
         message = "nftables syntax like \"2/second\" should be used in networking.firewall.pingLimit";
       }

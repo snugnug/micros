@@ -242,7 +242,7 @@ in {
     {
       assertions = [
         {
-          assertion = config.boot.init.system == "runit" || config.runit.services == {};
+          assertion = config.boot.init.currentBackend == config.boot.init.availableBackends.runit || config.runit.services == {};
           message = ''
             runit.services is set, but boot.init.system is "${config.boot.init.system}".
             Use micros.services for backend-agnostic services or select the runit backend.

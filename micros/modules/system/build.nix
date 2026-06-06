@@ -298,6 +298,7 @@ in {
 
       # nix-build -A system.build.toplevel && du -h $(nix-store -qR result) --max=0 -BM|sort -n
       toplevel =
+        lib.asserts.checkAssertWarn config.assertions config.warnings
         pkgs.runCommand "micros-toplevel" {
           activationScript = config.system.activationScripts.script;
         }

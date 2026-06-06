@@ -1,5 +1,6 @@
 {
   config,
+  options,
   lib,
   ...
 }: let
@@ -39,7 +40,20 @@
           Other services to depend on. If they are not running, start them prior to starting this service.
         '';
       };
-
+      startOnBoot = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Whether to start automatically after boot
+        '';
+      };
+      earlyStartOnBoot = mkOption {
+        type = types.bool;
+        default = false;
+        description = ''
+          Whether to start as an early boot service directly after stage 2
+        '';
+      };
       startScript = mkOption {
         type = types.nullOr types.lines;
         default = null;
@@ -78,5 +92,13 @@ in {
         Init-backend-agnostic service definitions.
       '';
     };
+  };
+  config = {
+    assertions =
+      lib.mapAttrsToList (name: cfg: {
+        assertion = !(cfg.startOnBoot && cfg.earlyStartOnBoot);
+        message = "${name}: Cannot enable startOnBoot and earlyStartOnBoot at the same time.";
+      })
+      config.micros.services;
   };
 }

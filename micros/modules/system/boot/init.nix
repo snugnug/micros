@@ -206,7 +206,7 @@ in {
   config = {
     assertions = [
       {
-        assertion = config.boot.init.executable;
+        assertion = config.boot.init.executable != null;
         message = ''
           boot.init.currentBackend is set to "${config.boot.init.currentBackend.name}", but that backend does not set an executable.
         '';

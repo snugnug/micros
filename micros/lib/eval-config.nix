@@ -17,7 +17,6 @@
     "system/boot/kernel.nix"
     "config/sysctl.nix"
     "misc/nixpkgs.nix"
-    "misc/nixpkgs-flake.nix"
     "misc/assertions.nix"
     "misc/lib.nix"
   ];

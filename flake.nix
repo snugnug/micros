@@ -56,19 +56,19 @@
           }).config.system.build.ociImage;
 
         iso =
-          (lib.microsSystem
-            {
-              specialArgs = {inherit inputs lib;};
-              modules = [
-                ./micros/modules/profiles/virtualization/iso-image.nix
+          lib.microsSystem
+          {
+            specialArgs = {inherit inputs lib;};
+            modules = [
+              ./micros/modules/profiles/virtualization/iso-image.nix
 
-                {
-                  nixpkgs.hostPlatform = {
-                    inherit system;
-                  };
-                }
-              ];
-            }).config.system.build.image;
+              {
+                nixpkgs.hostPlatform = {
+                  inherit system;
+                };
+              }
+            ];
+          };
       });
 
     legacyPackages = forSupportedSystems (system: let
