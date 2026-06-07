@@ -68,7 +68,13 @@ in {
   config = mkIf cfg.enable {
     micros.services = {
       sshd = {
-        dependencies = ["networking"];
+        dependencies =
+          ["networking"]
+          ++ (
+            if config.networking.nftables.enable == true
+            then ["firewall"]
+            else []
+          );
         startOnBoot = true;
         startScript = ''
           #!${pkgs.busybox}/bin/ash

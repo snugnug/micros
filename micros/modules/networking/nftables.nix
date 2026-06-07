@@ -271,7 +271,7 @@ in {
     environment.systemPackages = [pkgs.nftables];
     networking.nftables.checkRuleset = ! (pkgs.stdenv.hostPlatform.isMusl);
     micros.services = {
-      nftables = let
+      firewall = let
         enabledTables = lib.filterAttrs (_: table: table.enable) cfg.tables;
         deletionsScript = pkgs.writeScript "nftables-deletions" ''
           #! ${pkgs.nftables}/bin/nft -f
@@ -344,6 +344,8 @@ in {
         };
       in {
         name = "nftables";
+        dependencies = ["networking"];
+        startOnBoot = true;
         type = "oneshot";
         startScript = ''
           #!${pkgs.busybox}/bin/ash

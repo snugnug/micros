@@ -42,6 +42,7 @@
         then null
         else if value.type == "oneshot"
         then ''
+          ${lib.concatLines (map (x: "${pkgs.runit}/bin/sv up /etc/service/${x}") value.dependencies)}
           ${value.startScript}
           # Runit will restart an exited run script unless the service is marked down.
           exec ${pkgs.runit}/bin/sv down /etc/service/${value.name}

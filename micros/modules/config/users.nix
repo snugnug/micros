@@ -76,6 +76,7 @@ in {
 
     micros.services = {
       user-init = {
+        startOnBoot = true;
         type = "oneshot";
         startScript = ''
           #!${pkgs.busybox}/bin/ash
