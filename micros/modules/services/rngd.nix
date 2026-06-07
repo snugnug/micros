@@ -18,6 +18,7 @@ in {
   config = mkIf cfg.enable {
     micros.services = {
       rngd = {
+        startOnBoot = true;
         startScript = ''
           #!${pkgs.busybox}/bin/ash
           export PATH=$PATH:${lib.makeBinPath cfg.package}

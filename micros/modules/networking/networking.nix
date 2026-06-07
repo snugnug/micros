@@ -164,6 +164,16 @@ in {
   };
 
   config = {
+    micros.services.networking = {
+      startOnBoot = true;
+      type = "oneshot";
+      enable = !config.boot.isContainer;
+      startScript = ''
+        #!${pkgs.busybox}/bin/ash
+
+        ifup -v -a -E ${(pkgs.ifupdown-ng-minimal)}/usr/libexec/ifupdown-ng
+      '';
+    };
     environment.etc = {
       hostname = mkIf (config.networking.hostName != "") {
         text = config.networking.hostName + "\n";

@@ -20,6 +20,7 @@
   ./system/name.nix
   ./system/services.nix
 
+  ./services/chronyd.nix
   ./services/nix-daemon.nix
   ./services/getty.nix
   ./services/rngd.nix

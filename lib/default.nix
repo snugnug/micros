@@ -1,11 +1,20 @@
 {
   nixpkgs,
   micros-lib,
+  dag-lib,
+  dag-types-lib,
   oci-tool,
   nixos-core,
   ...
 }:
-nixpkgs.lib.extend (_: _: {
+nixpkgs.lib.extend (final: prev: {
+  micros.dag =
+    import dag-lib {lib = nixpkgs.lib;};
+  types = let
+    dagTypes = import dag-types-lib {lib = nixpkgs.lib;};
+    inherit prev;
+  in
+    prev.types // {inherit (dagTypes) dagOf;};
   microsSystem = args:
     import micros-lib (
       {

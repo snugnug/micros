@@ -68,8 +68,14 @@ in {
   config = mkIf cfg.enable {
     micros.services = {
       sshd = {
+        dependencies = ["networking"];
+        startOnBoot = true;
         startScript = ''
           #!${pkgs.busybox}/bin/ash
+
+          # If /etc/ssh is missing, create it.
+          [ ! -d /etc/ssh ] && mkdir -p /etc/ssh
+
           echo "Generating Host Keys"
           ${lib.strings.concatLines (
             lib.lists.forEach config.services.sshd.hostKeys (value: ''

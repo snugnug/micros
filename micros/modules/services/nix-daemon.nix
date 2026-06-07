@@ -18,6 +18,7 @@ in {
   config = mkIf cfg.enable {
     micros.services = {
       nix-daemon = {
+        startOnBoot = true;
         startScript = ''
           #!${pkgs.busybox}/bin/ash
 

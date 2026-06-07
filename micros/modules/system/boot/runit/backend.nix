@@ -34,66 +34,6 @@
     ];
   };
 
-  serviceOpts = types.submodule ({
-    name,
-    config,
-    ...
-  }: {
-    options = {
-      enable =
-        mkEnableOption ''
-          Whether to enable the service. If set to `false`, then the service files
-          in {file}`/etc/service` will not be created.
-        ''
-        // {default = true;};
-
-      name = mkOption {
-        type = types.str;
-        description = ''
-          Name of the service. This will determine the final path of the script
-          in {file}`/etc/service`. For example, `name = "openssh"` would create
-          the directory {file}`/etc/openssh` and place appropriate scripts in
-          the created directory.
-        '';
-      };
-
-      # TODO: those need descriptions. We should link relevant runit documentation
-      # if any, and describe the process of execution. For example, can any one of
-      # those options be omitted? Should be documented.
-      runScript = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = ''
-          Script ran on service startup. Creates the {file}`/etc/service/<name>/run` file.
-          Services are ran constantly by default. Use `sv pause <name>` in the run
-          script to make the script act as a one-shot.
-        '';
-      };
-
-      finishScript = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = ''
-          Script ran on service shutdown. Creates the {file}`/etc/service/<name>/finish` file.
-          Can be undefined.
-        '';
-      };
-
-      confScript = mkOption {
-        type = types.nullOr types.str;
-        default = null;
-        description = ''
-          Script which can be sourced by the run script to define variables.
-          Not used by default, and can be undefined.
-        '';
-      };
-    };
-
-    config = mkMerge [
-      {name = mkDefault name;}
-    ];
-  });
-
   genericServices = services: (
     lib.mapAttrs (_: value: {
       inherit (value) enable name finishScript confScript;
@@ -113,7 +53,7 @@
 
   serviceBuilder = services: (
     let
-      runitServices = (genericServices services) // config.runit.services;
+      runitServices = genericServices services;
     in (mkMerge [
       (mapAttrs' (name: value: {
           inherit (value) enable;
@@ -124,7 +64,15 @@
           };
         })
         runitServices)
-
+      (mapAttrs' (name: value: {
+          inherit (value) enable;
+          name = "service/${name}/down";
+          value = {
+            text = "";
+            mode = "0755";
+          };
+        })
+        runitServices)
       (mapAttrs' (name: value: {
           inherit (value) enable;
           name = "service/${name}/finish";
@@ -147,14 +95,33 @@
         runitServices)
     ])
   );
+  serviceDAG =
+    lib.micros.dag.topoSort
+    (lib.mapAttrs (_: value: (
+        if value.dependencies == []
+        then lib.micros.dag.entryAnywhere value
+        else lib.micros.dag.entryAfter (value.dependencies) value
+      ))
+      config.micros.services);
   cfg = config.runit;
+
+  bootManagerService = ''
+    #!${pkgs.busybox}/bin/ash
+
+    # Start Boot services
+    echo "Starting Boot services"
+    ${lib.concatLines (map (x: "${pkgs.runit}/bin/sv ${
+      if x.data.type == "longrun"
+      then "up"
+      else "once"
+    } /etc/service/${x.name}") (lib.filter (x: x.data.startOnBoot == true) serviceDAG.result))}
+
+    # Disable this service to stop it from restarting
+    exec sv down /etc/service/boot
+  '';
 in {
   options = {
     runit = {
-      services = mkOption {
-        type = types.attrsOf serviceOpts;
-        default = {};
-      };
       package = mkOption {
         type = types.package;
         default = pkgs.runit;
@@ -166,26 +133,11 @@ in {
         type = types.lines;
         default = ''
           #!${pkgs.busybox}/bin/ash
-          PATH=/run/booted-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
-
-          # If /etc/ssh is missing, create it.
-          [ ! -d /etc/ssh ] && mkdir -p /etc/ssh
+          PATH=/run/booted-system/sw/bin
 
           # Link /bin/sh from environment.binsh, defaults to ash from buxybox.
           mkdir /bin
           ln -s ${config.environment.binsh} /bin/sh
-
-          # Bring network interfaces up
-          ${
-            if (config.boot.isContainer == false)
-            then "ifup -v -a -E ${(pkgs.ifupdown-ng-minimal)}/usr/libexec/ifupdown-ng"
-            else ""
-          }
-
-          ${optionalString (config.networking.timeServers != [] && config.boot.isContainer == false) ''
-            # Configure timeservers
-            ${pkgs.chrony}/bin/chronyd -q ${lib.concatMapStrings (x: "'server ${x} iburst '") config.networking.timeServers}
-          ''}
 
           # disable DPMS on tty's
           echo -ne "\033[9;0]" > /dev/tty0
@@ -205,7 +157,8 @@ in {
           # used to configure a monitored service.
           mkdir -p /etc/service
 
-          PATH=/run/booted-system/sw/bin:/usr/local/bin:/usr/local/sbin:/bin:/sbin:/usr/bin:/usr/sbin:/usr/X11R6/bin
+          PATH=/run/booted-system/sw/bin
+
           exec env - PATH=$PATH ${pkgs.runit}/bin/runsvdir -P /etc/service
         '';
       };
@@ -240,24 +193,17 @@ in {
 
   config = mkMerge [
     {
-      assertions = [
-        {
-          assertion = config.boot.init.currentBackend == config.boot.init.availableBackends.runit || config.runit.services == {};
-          message = ''
-            runit.services is set, but boot.init.system is "${config.boot.init.system}".
-            Use micros.services for backend-agnostic services or select the runit backend.
-          '';
-        }
-      ];
       boot.init.availableBackends.runit = {
         name = "runit";
         executable = "${pkgs.runit}/bin/runit";
         serviceBuilder = serviceBuilder;
         requiredPackages = [runit-compat (config.runit.package)];
+        supportedFeatures = ["dependencies"];
         extraFiles = {
           "runit/1".source = pkgs.writeScript "runit-stage-1" cfg.stage-1.script;
           "runit/2".source = pkgs.writeScript "runit-stage-2" cfg.stage-2.script;
           "runit/3".source = pkgs.writeScript "runit-stage-3" cfg.stage-3.script;
+          "service/boot/run".source = pkgs.writeScript "boot-manager-service" bootManagerService;
         };
       };
     }

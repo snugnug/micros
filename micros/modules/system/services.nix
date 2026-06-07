@@ -47,13 +47,7 @@
           Whether to start automatically after boot
         '';
       };
-      earlyStartOnBoot = mkOption {
-        type = types.bool;
-        default = false;
-        description = ''
-          Whether to start as an early boot service directly after stage 2
-        '';
-      };
+
       startScript = mkOption {
         type = types.nullOr types.lines;
         default = null;
@@ -94,11 +88,12 @@ in {
     };
   };
   config = {
-    assertions =
-      lib.mapAttrsToList (name: cfg: {
-        assertion = !(cfg.startOnBoot && cfg.earlyStartOnBoot);
-        message = "${name}: Cannot enable startOnBoot and earlyStartOnBoot at the same time.";
-      })
-      config.micros.services;
+    assertions = lib.concatLists [
+      (lib.mapAttrsToList (name: cfg: {
+          assertion = (cfg.dependencies != []) -> (lib.lists.any (x: x == "dependencies") config.boot.init.currentBackend.supportedFeatures);
+          message = "${name}: Init backend does not support dependencies.";
+        })
+        config.micros.services)
+    ];
   };
 }

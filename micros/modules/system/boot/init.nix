@@ -152,7 +152,7 @@
         '';
       };
       supportedFeatures = mkOption {
-        type = types.listOf types.enum ["dependencies"];
+        type = types.listOf (types.enum ["dependencies"]);
         default = [];
         description = ''
           Extra features offered by the init backend, e.g. dependency management

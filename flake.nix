@@ -82,7 +82,8 @@
     # for when you are building non-supported platforms on your own accord.
     lib = import ./lib {
       inherit nixpkgs nixos-core oci-tool;
-
+      dag-types-lib = ./micros/lib/types/dag.nix;
+      dag-lib = ./micros/lib/dag.nix;
       micros-lib = ./micros/lib/eval-config.nix;
     };
   };
