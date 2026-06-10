@@ -34,8 +34,8 @@ in {
 
   config = {
     environment.etc = {
-      bashrc.text = "export PATH=/run/booted-system/sw/bin";
-      profile.text = "export PATH=/run/booted-system/sw/bin:/etc/profiles/per-user/$USER/bin";
+      bashrc.text = "export PATH=/run/wrappers/bin:/run/booted-system/sw/bin";
+      profile.text = "export PATH=/run/wrappers/bin:/run/booted-system/sw/bin:/etc/profiles/per-user/$USER/bin";
 
       "services".source = pkgs.iana-etc + "/etc/services";
 

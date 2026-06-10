@@ -343,12 +343,12 @@ in {
           '';
         };
       in {
-        name = "nftables";
         dependencies = ["networking"];
         startOnBoot = true;
         type = "oneshot";
         startScript = ''
           #!${pkgs.busybox}/bin/ash
+
           mkdir /var/lib/nftables
           ${ensureDeletions}
           ${rulesScript}

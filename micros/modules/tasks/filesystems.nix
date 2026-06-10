@@ -101,8 +101,8 @@ with lib; let
         description = "Type of the file system.";
       };
       neededForBoot = mkOption {
-        default = "false";
-        example = "true";
+        default = false;
+        example = true;
         type = types.bool;
         description = "Whether to mount filesystem in Stage 1";
       };
@@ -454,6 +454,10 @@ in {
         "/run/keys" = {
           fsType = "ramfs";
           options = ["nosuid" "nodev" "mode=750"];
+        };
+        "/run/wrappers" = {
+          fsType = "tmpfs";
+          options = ["nodev" "mode=755"];
         };
       }
       // optionalAttrs (!config.boot.isContainer) {

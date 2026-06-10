@@ -167,6 +167,10 @@ in {
     micros.services.networking = {
       startOnBoot = true;
       type = "oneshot";
+      dependencies =
+        if config.system.logging.enable == true
+        then ["syslog"]
+        else [];
       enable = !config.boot.isContainer;
       startScript = ''
         #!${pkgs.busybox}/bin/ash

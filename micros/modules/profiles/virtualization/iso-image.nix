@@ -110,6 +110,10 @@
     "mptspi"
     "vmxnet3"
     "vsock"
+
+    "i8042"
+    "atkbd"
+    "psmouse"
   ];
   fileSystems."/" = {
     device = "tmpfs";

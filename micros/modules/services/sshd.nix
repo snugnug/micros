@@ -71,6 +71,11 @@ in {
         dependencies =
           ["networking"]
           ++ (
+            if config.system.logging.enable == true
+            then ["syslog"]
+            else []
+          )
+          ++ (
             if config.networking.nftables.enable == true
             then ["firewall"]
             else []

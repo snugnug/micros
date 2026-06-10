@@ -5,6 +5,7 @@
   ./hardware/firmware.nix
 
   ./security/pam.nix
+  ./security/wrappers.nix
 
   ./system/boot/runit/backend.nix
   ./system/boot/containers.nix
@@ -19,12 +20,14 @@
   ./system/etc-setup.nix
   ./system/name.nix
   ./system/services.nix
+  ./system/syslog.nix
 
   ./services/chronyd.nix
   ./services/nix-daemon.nix
   ./services/getty.nix
   ./services/rngd.nix
   ./services/sshd.nix
+  ./services/mdevd.nix
 
   ./tasks/filesystems.nix
 

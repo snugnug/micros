@@ -69,7 +69,7 @@ in {
     users = {
       root = {
         uid = 0;
-        password = "!";
+        password = lib.mkDefault "!";
         home = "/root";
       };
     };
@@ -89,8 +89,38 @@ in {
 
     environment.etc = mkMerge [
       {
-        passwd.text = lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "${name}:x:${toString value.uid}:${toString value.gid}::${value.home}:${value.shell}") config.users));
-        shadow.text = lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "${name}:${value.password}:1::::::") config.users));
+        passwd = {
+          text = lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "${name}:${
+            if value.password == ""
+            then ""
+            else "x"
+          }:${toString value.uid}:${toString value.gid}::${value.home}:${value.shell}")
+          config.users));
+          mode = "0644";
+          uid = 0;
+          gid = 0;
+        };
+        shadow = {
+          text = lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "${name}:${value.password}:::::::") config.users));
+          mode = "0640";
+          uid = 0;
+          gid = 0;
+        };
+        "login.defs" = {
+          text = ''
+            DEFAULT_HOME yes
+            ENCRYPT_METHOD YESCRYPT
+            GID_MAX 29999
+            GID_MIN 1000
+            SYS_GID_MAX 999
+            SYS_GID_MIN 400
+            SYS_UID_MAX 999
+            SYS_UID_MIN 400
+            UID_MAX 29999
+            UID_MIN 1000
+            UMASK 077
+          '';
+        };
       }
 
       (lib.mapAttrs' (_: {

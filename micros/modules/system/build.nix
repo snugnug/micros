@@ -316,7 +316,7 @@ in {
 
           ${
             if !config.boot.isContainer
-            then "ln -s ${kernel} $out/kernel-modules"
+            then "ln -s ${config.system.modulesTree} $out/kernel-modules"
             else ""
           }
           touch $out/nixos-version

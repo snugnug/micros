@@ -12,9 +12,11 @@ let
 
   requiredPackagesMinimal = map (pkg: lib.setPrio ((pkg.meta.priority or lib.meta.defaultPriority) + 3) pkg) [
     pkgs.busybox
+    pkgs.shadow
   ];
   requiredPackages = map (pkg: lib.setPrio ((pkg.meta.priority or lib.meta.defaultPriority) + 3) pkg) [
     pkgs.util-linuxMinimal
+    pkgs.shadow
     pkgs.busybox
     pkgs.coreutils
     pkgs.iputils

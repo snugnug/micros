@@ -24,7 +24,13 @@ in {
     micros.services = {
       chronyd = {
         startOnBoot = true;
-        dependencies = ["networking"];
+        dependencies =
+          ["networking"]
+          ++ (
+            if config.system.logging.enable == true
+            then ["syslog"]
+            else []
+          );
         startScript = ''
           #!${pkgs.busybox}/bin/ash
           export PATH=$PATH

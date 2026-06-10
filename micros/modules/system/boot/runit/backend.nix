@@ -34,20 +34,31 @@
     ];
   };
 
+  logService = pkgs.writeScript "runit-service-logger" ''
+    #!${pkgs.busybox}/bin/ash
+    exec logger
+  '';
   genericServices = services: (
     lib.mapAttrs (_: value: {
       inherit (value) enable name finishScript confScript;
-      runScript =
+      runScript = let
+        startScriptFile = pkgs.writeScript "${value.name}-start-script" value.startScript;
+      in
         if value.startScript == null
         then null
-        else if value.type == "oneshot"
-        then ''
+        else ''
+          #!${pkgs.busybox}/bin/ash
+          echo "Starting ${value.name}'s dependencies"
           ${lib.concatLines (map (x: "${pkgs.runit}/bin/sv up /etc/service/${x}") value.dependencies)}
-          ${value.startScript}
-          # Runit will restart an exited run script unless the service is marked down.
-          exec ${pkgs.runit}/bin/sv down /etc/service/${value.name}
-        ''
-        else value.startScript;
+
+          echo "Starting ${value.name}"
+          ${startScriptFile}
+          ${
+            if value.type == "oneshot"
+            then "exec ${pkgs.runit}/bin/sv down /etc/service/${value.name}"
+            else ""
+          }
+        '';
     })
     services
   );
@@ -74,6 +85,16 @@
           };
         })
         runitServices)
+      (mapAttrs' (name: value: {
+          inherit (value) enable;
+          name = "service/${name}/log/run";
+          value = {
+            source = logService;
+            mode = "0755";
+          };
+        })
+        runitServices)
+
       (mapAttrs' (name: value: {
           inherit (value) enable;
           name = "service/${name}/finish";
@@ -158,7 +179,7 @@ in {
           # used to configure a monitored service.
           mkdir -p /etc/service
 
-          PATH=/run/booted-system/sw/bin
+          PATH=/run/wrappers/bin:/run/booted-system/sw/bin
 
           exec env - PATH=$PATH ${pkgs.runit}/bin/runsvdir -P /etc/service
         '';

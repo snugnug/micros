@@ -13,7 +13,7 @@ in {
       enable = mkEnableOption "getty";
       terminal = mkOption {
         type = types.str;
-        default = "/dev/tty0";
+        default = "/dev/ttyS0";
         description = ''
           Terminal to start getty in
         '';
