@@ -491,39 +491,6 @@
   };
 in {
   options = {
-    not-os = {
-      preMount = mkOption {
-        type = types.lines;
-        default = "";
-      };
-
-      postMount = mkOption {
-        type = types.lines;
-        default = "";
-      };
-
-      # There is no preBootCommands. Trust me, I've checked.
-      postBootCommands = mkOption {
-        default = "";
-        example = "rm -f /var/log/messages";
-        type = types.lines;
-        description = ''
-          Shell commands to be executed just before runit is started.
-        '';
-      };
-
-      readOnlyNixStore = mkOption {
-        type = types.bool;
-        default = true;
-        description = ''
-          If set, NixOS will enforce the immutability of the Nix store
-          by making {file}`/nix/store` a read-only bind
-          mount.  Nix will automatically make the store writable when
-          needed.
-        '';
-      };
-    };
-
     boot.initrd = {
       enable = mkEnableOption "initrd" // {default = true;};
 
