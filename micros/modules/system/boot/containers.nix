@@ -4,6 +4,9 @@
 in {
   options = {
     boot.isContainer = mkOption {
+      description = ''
+        Whether the image is a container.
+      '';
       type = types.bool;
       default = false;
     };

@@ -8,6 +8,9 @@
 in {
   options = {
     hardware.firmware = mkOption {
+      description = ''
+        Firmware packages
+      '';
       type = types.listOf types.package;
       default = [];
       apply = list:

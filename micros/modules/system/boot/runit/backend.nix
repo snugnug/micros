@@ -153,6 +153,9 @@ in {
       };
       stage-1.script = mkOption {
         type = types.lines;
+        description = ''
+          Runit's initial start script
+        '';
         default = ''
           #!${pkgs.busybox}/bin/ash
           PATH=/run/booted-system/sw/bin
@@ -171,6 +174,9 @@ in {
 
       stage-2.script = mkOption {
         type = types.lines;
+        description = ''
+          Runit's main service runner script
+        '';
         default = ''
           #!${pkgs.busybox}/bin/ash
           cat /proc/uptime
@@ -187,6 +193,9 @@ in {
 
       stage-3.script = mkOption {
         type = types.lines;
+        description = ''
+          Runit shutdown script
+        '';
         default = ''
           #!${pkgs.busybox}/bin/ash
 

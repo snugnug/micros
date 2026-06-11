@@ -62,6 +62,9 @@ in {
   options = {
     users = mkOption {
       default = {};
+      description = ''
+        Attrset of users.
+      '';
       type = with types; attrsOf (submodule userOpts);
     };
   };

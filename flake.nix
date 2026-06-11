@@ -8,11 +8,13 @@
     url = "github:feel-co/nixos-core";
     inputs.nixpkgs.follows = "nixpkgs";
   };
+  inputs.ndg.url = "github:feel-co/ndg";
   outputs = {
     self,
     nixpkgs,
     oci-tool,
     nixos-core,
+    ndg,
     ...
   } @ inputs: let
     inherit (self) lib;
@@ -39,6 +41,66 @@
               }
             ];
           }).config.system.build.runvm;
+        docs = ndg.packages.${system}.ndg-builder.override {
+          title = "Micros Documentation";
+          evaluatedModules = lib.microsSystem {
+            modules = [
+              {
+                nixpkgs.hostPlatform = {inherit system;};
+              }
+            ];
+            specialArgs = {inherit inputs lib;};
+          };
+
+          transformOptions = opt:
+            opt
+            // {
+              declarations = let
+                inherit (lib) hasPrefix removePrefix pipe;
+                basePathStr = toString ./.;
+                nixpkgsPathStr = toString ((pkgsFor system).path);
+              in
+                map
+                (decl: let
+                  declStr = toString decl;
+                in
+                  if hasPrefix basePathStr declStr
+                  then
+                    pipe declStr [
+                      (removePrefix basePathStr)
+                      (removePrefix "/")
+                      (x: {
+                        url = "https://github.com/snugnug/micros/blob/master/${x}";
+                        name = "<micros/${x}>";
+                      })
+                    ]
+                  else if decl == "lib/modules.nix"
+                  then {
+                    url = "https://github.com/NixOS/nixpkgs/blob/master/${decl}";
+                    name = "<nixpkgs/lib/modules.nix>";
+                  }
+                  else if hasPrefix nixpkgsPathStr declStr
+                  then
+                    pipe declStr [
+                      (removePrefix nixpkgsPathStr)
+                      (removePrefix "/")
+                      (x: {
+                        url = "https://github.com/NixOS/nixpkgs/blob/master/${x}";
+                        name = "<nixpkgs/${x}>";
+                      })
+                    ]
+                  else decl)
+                opt.declarations;
+            };
+          generateSearch = true;
+          highlightCode = true;
+          optionsDepth = 10;
+          checkModules = true;
+
+          moduleName = "micros";
+          basePath = ./.;
+          repoPath = "https://github.com/snugnug/micros/blob/master";
+        };
       }
       // lib.optionalAttrs (system == "x86_64-linux") {
         lxc =

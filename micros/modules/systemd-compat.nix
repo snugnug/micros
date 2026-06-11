@@ -3,8 +3,17 @@
 in {
   options = {
     # TODO, it just silently ignores all systemd services
-    systemd.services = mkOption {};
-    systemd.user = mkOption {};
-    systemd.tmpfiles = mkOption {};
+    systemd.services = mkOption {
+      description = ''
+      '';
+    };
+    systemd.user = mkOption {
+      description = ''
+      '';
+    };
+    systemd.tmpfiles = mkOption {
+      description = ''
+      '';
+    };
   };
 }

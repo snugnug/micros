@@ -1,5 +1,23 @@
 {
   "nodes": {
+    "ndg": {
+      "inputs": {
+        "nixpkgs": "nixpkgs"
+      },
+      "locked": {
+        "lastModified": 1780931924,
+        "narHash": "sha256-gAnwnOp+kZyZyutpy4bBD1ZgvEumfNpICcB/kk6p8ME=",
+        "owner": "feel-co",
+        "repo": "ndg",
+        "rev": "6453e6ceec691227f722d2898964618b68b2c94c",
+        "type": "github"
+      },
+      "original": {
+        "owner": "feel-co",
+        "repo": "ndg",
+        "type": "github"
+      }
+    },
     "nixos-core": {
       "inputs": {
         "nixpkgs": [
@@ -21,6 +39,19 @@
       }
     },
     "nixpkgs": {
+      "locked": {
+        "lastModified": 1779560665,
+        "narHash": "sha256-NpH8iEQ5JHv/BtUuzTEXUMDxPLetCDzIv4OxL8H7Kps=",
+        "rev": "64c08a7ca051951c8eae34e3e3cb1e202fe36786",
+        "type": "tarball",
+        "url": "https://releases.nixos.org/nixos/unstable/nixos-26.05pre1004030.64c08a7ca051/nixexprs.tar.xz?lastModified=1779560665&rev=64c08a7ca051951c8eae34e3e3cb1e202fe36786"
+      },
+      "original": {
+        "type": "tarball",
+        "url": "https://channels.nixos.org/nixos-unstable/nixexprs.tar.xz"
+      }
+    },
+    "nixpkgs_2": {
       "locked": {
         "lastModified": 1777578337,
         "narHash": "sha256-Ad49moKWeXtKBJNy2ebiTQUEgdLyvGmTeykAQ9xM+Z4=",
@@ -58,8 +89,9 @@
     },
     "root": {
       "inputs": {
+        "ndg": "ndg",
         "nixos-core": "nixos-core",
-        "nixpkgs": "nixpkgs",
+        "nixpkgs": "nixpkgs_2",
         "oci-tool": "oci-tool"
       }
     }
