@@ -51,7 +51,7 @@
             ];
             specialArgs = {inherit inputs lib;};
           };
-
+          inputDir = ./docs;
           transformOptions = opt:
             opt
             // {
