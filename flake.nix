@@ -148,5 +148,14 @@
       dag-lib = ./micros/lib/dag.nix;
       micros-lib = ./micros/lib/eval-config.nix;
     };
+
+    templates = {
+      default = {
+        path = ./template;
+        description = ''
+          A basic micros configuration using a nix flake.
+        '';
+      };
+    };
   };
 }
