@@ -1,15 +1,16 @@
 # MicrOS
 
-MicrOS is a small, experimental operating system designed for embedded
-situations. It is based heavily on NixOS, but compiles down to a microscopic
-kernel[^1], an initrd and a ~50mb squashfs.
+Small, experimental operating system designed for embedded and containerized
+situations. MicrOS is based _heavily_ on NixOS, but compiles down to a
+microscopic kernel[^1], an initrd, a ~50mb squashfs,
 
+This is also our experiment in init-agnostic NixOS.
 [Runit](https://smarden.org/runit/) is the default init backend, with a small
 init-agnostic service interface layered over it. This is not as robust as the
 NixOS systemd module, but it results in a small and fast image for low-resource
-scenarios, e.g., embedded development.
+scenarios, e.g., embedded development and service containers.
 
-## Why
+## Motivation
 
 NixOS is great, it fits under most use-cases and it is extremely flexible on
 what you might use it for. Unfortunately for us, it is quite _large_ even after
@@ -50,9 +51,11 @@ lib.microsSystem {
 
 Above configuration enough to construct a basic system. You may build different
 components of the configuration, available under `config.system.build` to create
-different build artifacts for different workflows.
+different build artifacts for different workflows. Please see
+[our documentation](https://github.com/cleverca22/not-os) for more details and
+module system options.
 
-## Init systems
+## Init Systems
 
 MicrOS hands PID 1 off to the selected init backend after stage 2 activation.
 `runit` is the default backend. Service modules should use `micros.services`;
@@ -73,24 +76,25 @@ additional services that could be upstreamed to MicrOS.
 
 [not-os]: https://github.com/cleverca22/not-os
 
+MicrOS is MIT licensed as a result of its status as a **hard**-fork of [not-os]
+and our tendency to borrow modules from Nixpkgs, both of which are MIT licensed.
+Any and all work here is available under the MIT license, following upstream.
+Please support the original author and contributors.
+
 > [!NOTE]
-> Work here is based _heavily_ on the awesome [not-os]. I worked on something
-> similar until I realized I was duplicating effort for no reason. This
-> repository diverges (and will continue to diverge from not-os) in terms of
-> module structure, coding conventions and goals on what should and should not
-> be provided. In addition to the aggressive repository restructure, I will be
-> working to provide more _idiomatic_ Nix code that follows best practices and
-> focuses on purity.
+> Work here is based _heavily_ on the awesome [not-os]. I (@notashelf) worked on
+> something similar until I realized I was duplicating effort for no reason.
+> This repository diverges (and will continue to diverge from not-os) in terms
+> of module structure, coding conventions and goals on what should and should
+> not be provided. In addition to the aggressive repository restructure, I will
+> be working to provide more _idiomatic_ Nix code that follows best practices
+> and focuses on purity.
 
-MicrOS is a _soft_-fork of not-os, plain and simple. Any and all work here is
-available under the MIT license, following upstream. I do not make any claims on
-the code provided here. Please support the original author and contributors.
-
-The nature of MicrOS does not quite allow for a dependency on nixpkgs due to its
-tight integration with systemd. Although, we borrow modules from nixpkgs at
-times to avoid duplicating work, or to avoid reinventing the wheel as as square.
-A copyright notice is hereby provided that _some_ modules in MicrOS are directly
-copied from nixpkgs, also available under the MIT license.
+The nature of MicrOS does not quite allow for a _direct_ dependency on Nixpkgs
+due to its tight integration with Systemd. Although, we borrow modules from
+nixpkgs at times to avoid duplicating work, or to avoid reinventing the wheel as
+as square. A copyright notice is hereby provided that _some_ modules in MicrOS
+are directly copied from nixpkgs, also available under the MIT license.
 
 Please see [LICENSE](LICENSE.md) for details.
 
