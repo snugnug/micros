@@ -52,7 +52,7 @@ lib.microsSystem {
 Above configuration enough to construct a basic system. You may build different
 components of the configuration, available under `config.system.build` to create
 different build artifacts for different workflows. Please see
-[our documentation](https://github.com/cleverca22/not-os) for more details and
+[our documentation](https://micros.snugnug.org) for more details and
 module system options.
 
 ## Init Systems
