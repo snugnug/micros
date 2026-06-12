@@ -1,18 +1,18 @@
 # Getting Started
 
-This document is a basic guide for creating a micros image.
+This document is a basic guide for creating a MicrOS image.
 
 ## Prerequisites
 
 To follow this guide, you require the following software:
 
-- Nix package manager
-- A text editor
+- The [Nix build tool](https://nixos.org)
+- A text editor of your choosing
 
-Additionally, while this guide can be followed with or without nix flakes,
-testing is primarily done with nix flakes, and commands given use nix flakes. It
-is recommended that flakes are enabled for users who are unfamiliar with the nix
-language.
+Additionally, while this guide _could_ be followed with or without the
+experimental flakes feature enabled, testing is done primarily with Nix flakes,
+and the example commands given use Nix flakes. It is recommended that flakes are
+enabled for users who are unfamiliar with the Nix language.
 
 ```{=include=} chapters
 getting-started/creating-config.md
