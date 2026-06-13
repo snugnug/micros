@@ -13,7 +13,7 @@ This creates a Nix flake containing a MicrOS configuration, with the files
 explanations of the three files.
 
 > [!NOTE]
-> when modifying the flake, the names and structure of the files (outside of the
+> When modifying the flake, the names and structure of the files (outside of the
 > `flake.nix` file) is unimportant, as long as the correct paths are included in
 > the list of modules. Additionally, if git is being used in the configuration
 > (which is recommended for configurations intended to be maintained and used
