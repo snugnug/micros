@@ -1,26 +1,31 @@
 [
-  ./config/users.nix
-  ./config/system-path.nix
-
   ./hardware/firmware.nix
 
   ./security/pam.nix
   ./security/wrappers.nix
 
-  ./system/boot/runit/backend.nix
+  ./system/init-systems/runit/backend.nix
+
   ./system/boot/containers.nix
-  ./system/boot/getty.nix
   ./system/boot/init.nix
   ./system/boot/kernel.nix
   ./system/boot/stage-1.nix
   ./system/boot/stage-2.nix
-  ./system/activation.nix
+
+  ./system/activation/activation.nix
   ./system/activation/activation-script.nix
+
+  ./system/environment/etc-setup.nix
+  ./system/environment/environment.nix
+
   ./system/build.nix
-  ./system/etc-setup.nix
   ./system/name.nix
   ./system/services.nix
   ./system/syslog.nix
+  ./system/filesystems.nix
+  ./system/users.nix
+  ./system/system-path.nix
+  ./system/systemd-compat.nix
 
   ./services/chronyd.nix
   ./services/nix-daemon.nix
@@ -29,17 +34,14 @@
   ./services/sshd.nix
   ./services/mdevd.nix
 
-  ./tasks/filesystems.nix
-
   ./virtualisation/qemu.nix
   ./virtualisation/lxc-container.nix
 
-  ./environment.nix
   ./networking/networking.nix
   ./networking/firewall.nix
   ./networking/nftables.nix
-  ./nix.nix
-  ./nixpkgs.nix
-  ./nixpkgs-flake.nix
-  ./systemd-compat.nix
+
+  ./nix/nix.nix
+  ./nix/nixpkgs.nix
+  ./nix/nixpkgs-flake.nix
 ]
