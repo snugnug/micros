@@ -38,11 +38,6 @@ in {
       profile.text = "export PATH=/run/wrappers/bin:/run/booted-system/sw/bin:/etc/profiles/per-user/$USER/bin";
 
       "services".source = pkgs.iana-etc + "/etc/services";
-
-      group.text = ''
-        root:x:0:
-        nixbld:x:30000:nixbld1,nixbld10,nixbld2,nixbld3,nixbld4,nixbld5,nixbld6,nixbld7,nixbld8,nixbld9
-      '';
     };
   };
 }
