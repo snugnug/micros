@@ -9,7 +9,12 @@
   inherit (config.security) wrapperDir;
   parentWrapperDir = dirOf wrapperDir;
   securityWrapper = sourceProg:
-    pkgs.pkgsStatic.callPackage ./wrapper-pkg.nix {
+    (
+      if pkgs.stdenv.hostPlatform.isMusl
+      then pkgs.callPackage
+      else pkgs.pkgsStatic.callPackage
+    )
+    ./wrapper-pkg.nix {
       inherit sourceProg;
 
       # glibc definitions of insecure environment variables

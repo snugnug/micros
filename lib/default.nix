@@ -31,6 +31,8 @@ nixpkgs.lib.extend (final: prev: {
             inherit nixos-core oci-tool;
           };
 
+        lib = final;
+
         modules =
           args.modules
           ++ [
