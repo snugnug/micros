@@ -85,7 +85,6 @@ in {
               "gfxmenu"
               "gfxterm"
               "gfxterm_background"
-              "gfxterm_menu"
               "test"
               "loadenv"
               "all_video"

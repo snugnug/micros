@@ -13,7 +13,7 @@
       password = ""; # Blank password denotes passwordless login is allowed, use "!" (default) to disable password login entirely. To set a password, set this string to a hashed password using the `mkpasswd` command.
       packages = [
         pkgs.vim
-        pkgs.ssh
+        pkgs.openssh
       ]; # User-wide packages
     };
   };
