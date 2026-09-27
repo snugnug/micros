@@ -1,14 +1,20 @@
 {
-  inputs.nixpkgs.url = "github:nixos/nixpkgs?ref=nixos-unstable";
-  inputs.oci-tool = {
-    url = "github:damitusthyyeetus123/oci-tool";
-    inputs.nixpkgs.follows = "nixpkgs";
+  inputs = {
+    nixpkgs.url = "https://channels.nixos.org/nixos-unstable/nixexprs.tar.zst";
+
+    oci-tool = {
+      url = "github:damitusthyyeetus123/oci-tool";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    nixos-core = {
+      url = "github:feel-co/nixos-core";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
+
+    ndg.url = "github:feel-co/ndg";
   };
-  inputs.nixos-core = {
-    url = "github:feel-co/nixos-core";
-    inputs.nixpkgs.follows = "nixpkgs";
-  };
-  inputs.ndg.url = "github:feel-co/ndg";
+
   outputs = {
     self,
     nixpkgs,
