@@ -25,11 +25,11 @@
         ]
       },
       "locked": {
-        "lastModified": 1777650426,
-        "narHash": "sha256-4b8eKiaNV9V/0mLdZ/LdMEUDBHJ4J+FeaFY/lgATV60=",
+        "lastModified": 1791294720,
+        "narHash": "sha256-zmDoO7zZVDKBz2mK5uqsRvM/KEBiiakdSn5yYdIwPss=",
         "owner": "feel-co",
         "repo": "nixos-core",
-        "rev": "4198655df11c10266c89c4772feff35297fb6ba4",
+        "rev": "3d3bfe4f586cdc89824d06395889039189545d4d",
         "type": "github"
       },
       "original": {
