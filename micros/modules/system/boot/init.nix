@@ -160,7 +160,7 @@
       };
       extraFiles = mkOption {
         type = etcSubmodule;
-        default = [];
+        default = {};
         description = ''
           Extra files required by the init system, passed directly to environment.etc and uses the same syntax.
         '';
