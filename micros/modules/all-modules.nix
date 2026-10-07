@@ -5,6 +5,7 @@
   ./security/wrappers.nix
 
   ./system/init-systems/runit/backend.nix
+  ./system/init-systems/dinit/backend.nix
 
   ./system/boot/containers.nix
   ./system/boot/init.nix
