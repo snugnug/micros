@@ -124,7 +124,7 @@ in {
     };
     micros.services.syslog = {
       startOnBoot = true;
-      type = "oneshot";
+      type = "longrun";
       enable = true;
       startScript = ''
         #!${pkgs.busybox}/bin/ash
