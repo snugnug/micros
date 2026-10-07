@@ -36,7 +36,7 @@ in {
     ln -sfn /run /var/run
     ${
       if (config.boot.isContainer == false)
-      then "hostname -F /etc/hostname"
+      then "${lib.getExe' pkgs.busybox "hostname"} -F /etc/hostname"
       else ""
     }
   '';

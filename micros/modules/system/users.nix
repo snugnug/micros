@@ -142,7 +142,7 @@ in {
           # Create users and groups with random UID/GIDs
           ${lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "useradd -m -S ${value.shell} -d ${value.home} ${value.name}") (lib.filterAttrs (name: value: value.uid == null) config.users)))}
 
-          ${lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "echo \"${value.name}:${value.password}\" | chpasswd -e") (lib.filterAttrs (name: value: value.uid == null) config.users)))}
+          ${lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "echo \"${value.name}:${value.password}\" | chpasswd -e") (lib.filterAttrs (name: value: value.uid == null || name == "root") config.users)))}
 
           ${lib.concatLines (builtins.attrValues (builtins.mapAttrs (name: value: "groupadd -U ${lib.strings.concatStringsSep "," value.members} ${value.name}") (lib.filterAttrs (name: value: value.gid == null) config.groups)))}
 

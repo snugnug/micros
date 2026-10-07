@@ -7,7 +7,8 @@
   };
   fileSystems."/nix/store" = {
     device = "/dev/vda";
-    fsType = "auto";
+    fsType = "squashfs";
+    options = ["ro"];
     neededForBoot = true;
   };
   services.getty.enable = true;
